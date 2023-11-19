@@ -1,0 +1,3 @@
+[submodule "fairmotion"]
+	path = fairmotion
+	url = https://github.com/facebookresearch/fairmotion.git
