@@ -1,27 +1,45 @@
 import os
 
+import torch
+
 from fairmotion.tasks.motion_prediction import utils
 
 
-def prepare_dataset():
+def prepare_dataset(fpath, batch_size, device):
     """
     Function processes the AMASS DIP dataset by:
         1. Calling the fairmotion utils as a base
-        2. Post-processing the output by constructing new targets
 
+    Args:
+        fpath: The relative path to the raw AMASS dataset
+        batch_size: The batch_size to parse the data into
+        device: The device to compile the data for
 
-    The auto-regressive targets in step 2 are defined as in the Spatio-temporal Transformer paper:
-        y_t = x_{t + 1}, ie. we shift the input sequence to predict the next movement
-
+    Returns:
+        A dict of train, val, and test datasets (iterators).
     """
-
-    fpath = "data/sampled/aa/"
-    dataset, mean, std = utils.prepare_dataset(
+    datasets, mean, std = utils.prepare_dataset(
         *[
             os.path.join(fpath, f"{split}.pkl")
             for split in ["train", "test", "validation"]
         ],
-        batch_size=64,
-        device='cpu',
+        batch_size=batch_size,
+        device=device,
     )
-    return dataset
+    return datasets
+
+def generate_targets(src_seqs, tgt_seqs):
+    """
+    The auto-regressive targets are defined as in the Spatio-temporal Transformer paper:
+        y_t = x_{t + 1}, ie. we shift the input sequence to predict the next movement
+
+    Args:
+        src_seqs: The original source from AMASS DIP
+        tgt_seqs: The original targets from AMASS DIP
+
+    Returns:
+        A Tensor containing the shifted auto-regressive targets.
+    """
+    next_motion_seqs = src_seqs[:, 1:, :]
+    final_motion_seqs = torch.unsqueeze(tgt_seqs[:, 0, :], 1)
+    return torch.cat((next_motion_seqs, final_motion_seqs), 1)

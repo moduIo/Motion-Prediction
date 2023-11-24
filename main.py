@@ -1,27 +1,23 @@
-from utils.dataset import prepare_dataset
+import torch
+
+from utils.dataset import prepare_dataset, generate_targets
 
 
 def main():
     # Process train, val, test datasets
-    dataset = prepare_dataset()
+    fpath = "data/sampled/aa/"
+    batch_size = 64
+    device = 'cpu'
+    datasets = prepare_dataset(fpath, batch_size, device)
 
     # Setup Model
-    _, seq_len, num_predictions = next(iter(dataset["train"]))[1].shape
+    _, seq_len, num_predictions = next(iter(datasets["train"]))[1].shape
     num_joints = 24  # AMASS DIP has 24 joints
     M = num_predictions // num_joints
 
-    # TODO: Custom function for X, Y processing
-
     # Train
-    for iterations, (src_seqs, tgt_seqs) in enumerate(dataset["train"]):
-        print(src_seqs.shape, tgt_seqs.shape)
-
-        for i in range(num_joints):
-            j_i = src_seqs[0,0,i*M:(i+1)*M]
-            print(j_i.shape)
-            print(j_i)
-
-        break
+    for iterations, (src_seqs, tgt_seqs) in enumerate(datasets["train"]):
+        tgt_seqs = generate_targets(src_seqs, tgt_seqs)
 
 
 if __name__ == "__main__":
