@@ -31,17 +31,15 @@ def main(model_name: str = None, target_type: str = None) -> None:
     # Loss per epoch is the average loss per sequence
     num_training_sequences = len(datasets["train"]) * batch_size
 
-    # Train
-    print("Training model...")
-
     if model_name == ModelEnum.SPATIO_TEMPORAL_TRANSFORMER:
         model = SpatioTemporalTransformer(num_joints, joint_dim, raw_dim, embedding_dim)
     else:
         print("Incorrect program usage.")
         return
 
+    # Train
+    print("Training model...")
     torch.autograd.set_detect_anomaly(True)
-
     opt = torch.optim.SGD(model.parameters(), lr=1e-8, momentum=0.9)
     criterion = torch.nn.MSELoss(reduction='sum')
 
