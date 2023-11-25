@@ -64,6 +64,7 @@ def main(model_name: str = None, target_type: str = None) -> None:
 
         epoch_loss = epoch_loss / num_training_sequences
         print(f"Training loss {epoch_loss} | ")
+        break
 
 
 if __name__ == "__main__":

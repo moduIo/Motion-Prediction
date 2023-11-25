@@ -1,10 +1,52 @@
 import torch
+import torch.nn as nn
 
 
-class SpatioTemporalTransformer(torch.nn.Module):
+class JointEmbedder(nn.Module):
+    def __init__(self, num_joints, joint_dim, embedding_dim):
+        """
+        Initializes a linear embedding layer for each joint.
+        """
+        super().__init__()
+        self.num_joints = num_joints
+        self.joint_dim = joint_dim
+        self.embedding_dim = embedding_dim
+        self.embeddings = nn.ModuleList([nn.Linear(joint_dim, embedding_dim) for _ in range(num_joints)])
+
+    def forward(self, src_seqs):
+        """
+        Method applies the linear joint embedding to each joint and concats them together.
+        This maps from:
+            (B, T, D) => (B, T, E)
+
+        Where:
+            1. B := Batch Size
+            2. T := Sequence Length
+            3. D := Raw Joint Feature Dimension
+            4. E := Joint Embedding Dimension
+
+        Args:
+            src_seqs: A Tensor of sequences to process.
+
+        Returns:
+            A Tensor with the final dimension embedded.
+        """
+        joint_embeddings = []
+        for i in range(self.num_joints):
+            j_i = src_seqs[:, :, i * self.joint_dim:(i+1) * self.joint_dim]
+            joint_embeddings.append(self.embeddings[i](j_i))
+
+        embedded_seqs = torch.cat(joint_embeddings, dim=-1)
+        return embedded_seqs
+
+
+class SpatioTemporalAttentionBlock(nn.Module):
+    ...
+
+
+class SpatioTemporalTransformer(nn.Module):
     def __init__(self, num_joints, joint_dim, input_dim, embedding_dim):
         """
-        In the constructor we instantiate five parameters and assign them as members.
         """
         super().__init__()
         self.num_joints = num_joints
@@ -12,19 +54,14 @@ class SpatioTemporalTransformer(torch.nn.Module):
         self.input_dim = input_dim
         self.embedding_dim = embedding_dim
 
-        self.W = torch.nn.Parameter(torch.randn((input_dim, 256)))
-        self.output = torch.nn.Parameter(torch.randn((256, input_dim)))
+        # Define Modules
+        print(embedding_dim * num_joints, embedding_dim * joint_dim)
+        self.joint_embedder = JointEmbedder(num_joints, joint_dim, embedding_dim)
+        self.output = nn.Linear(num_joints * embedding_dim, num_joints * joint_dim)  # TODO: Delete this placeholder
 
     def forward(self, src_seqs):
         """
         """
-        print(self.W.shape, src_seqs.shape)
-        # src_seqs.shape = torch.Size([64, 120, 72]) = [64, 120, num_joints * joint_dim]
-        # 1. map each joint to it's embedding: [64, 120, 72] => [64, 120, num_joints * embedding_dim]
-        # 2. Positional embedding
-        return src_seqs @ self.W @ self.output
-
-    def iterate_over_joints(self):
-        # Iterate over joints
-        for i in range(self.num_joints):
-            j_i = self.src_seqs[0, 0, i*self.M:(i+1)*self.M]
+        embeddings_seqs = self.joint_embedder(src_seqs)
+        print(src_seqs.shape, embeddings_seqs.shape)
+        return self.output(embeddings_seqs)
