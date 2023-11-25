@@ -28,7 +28,8 @@ def prepare_dataset(fpath, batch_size, device):
     )
     return datasets
 
-def generate_targets(src_seqs, tgt_seqs):
+
+def generate_auto_regressive_targets(src_seqs, tgt_seqs):
     """
     The auto-regressive targets are defined as in the Spatio-temporal Transformer paper:
         y_t = x_{t + 1}, ie. we shift the input sequence to predict the next movement
