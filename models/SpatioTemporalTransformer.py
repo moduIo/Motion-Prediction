@@ -77,7 +77,7 @@ class JointEmbedding(nn.Module):
 
 
 class SpatioTemporalAttention(nn.Module):
-    def __init__(self, num_joints, embedding_dim, num_heads=1):
+    def __init__(self, num_joints, embedding_dim, num_heads=1, dropout=0.1):
         """
         Initializes the ST Attention.
         """
@@ -86,11 +86,24 @@ class SpatioTemporalAttention(nn.Module):
         self.embedding_dim = embedding_dim
         self.input_dim = num_joints * embedding_dim
         self.num_heads = num_heads
-        self.attention_dim = self.input_dim / num_heads
+        self.attention_dim = self.embedding_dim / num_heads
         assert self.attention_dim.is_integer()
+        self.attention_dim = int(self.attention_dim)
+
+        # Temporal Attention
+        self.temporal_attention_q = nn.ModuleList(  # TODO: Handle multiple attn heads
+            [nn.Linear(self.embedding_dim, self.attention_dim, bias=False) for _ in range(num_joints)])
+        self.temporal_attention_k = nn.ModuleList(  # TODO: Handle multiple attn heads
+            [nn.Linear(self.embedding_dim, self.attention_dim, bias=False) for _ in range(num_joints)])
+        self.temporal_attention_v = nn.ModuleList(  # TODO: Handle multiple attn heads
+            [nn.Linear(self.embedding_dim, self.attention_dim, bias=False) for _ in range(num_joints)])
+        self.temporal_tau = torch.nn.Softmax(dim=-1)
+        self.temporal_norm = torch.nn.BatchNorm1d(self.input_dim, affine=False, track_running_stats=False)
 
         # Setup layers
+        self.dropout = nn.Dropout(p=dropout)
         self.fc = nn.Linear(self.input_dim, self.input_dim)
+        self.fc_norm = torch.nn.BatchNorm1d(self.input_dim, affine=False, track_running_stats=False)
 
     def _generate_square_subsequent_mask(self, shape):
         """
@@ -120,10 +133,35 @@ class SpatioTemporalAttention(nn.Module):
         Returns:
             A Tensor with attention predictions.
         """
+        # 1. Compute Temporal Attention
         mask = self._generate_square_subsequent_mask(src_seqs.shape[1])
-        print(mask.shape)
-        print(mask)
-        return self.fc(src_seqs)
+        normalization = torch.sqrt(torch.tensor(self.attention_dim).float())
+        temporal_attentions = []
+
+        for i in range(self.num_joints):
+            # Slice sequence to the specific joint
+            j_i = src_seqs[:, :, i * self.embedding_dim:(i+1) * self.embedding_dim]
+
+            # Setup Projections
+            q_i = self.temporal_attention_q[i](j_i)
+            k_i = self.temporal_attention_k[i](j_i)
+            v_i = self.temporal_attention_v[i](j_i)
+
+            # Compute Attention
+            a_i = (q_i @ k_i.permute((0, 2, 1))) / normalization
+            a_i = self.temporal_tau(a_i + mask)
+            attention_i = a_i @ v_i
+            temporal_attentions.append(attention_i)
+
+        temporal_attention = torch.cat(temporal_attentions, dim=-1)
+        temporal_attention = self.temporal_norm(self.dropout(temporal_attention) + src_seqs)
+
+        # 2. Compute Spatial Attention
+
+        # 3. Compupte Spatio-temporal Attention
+        attention = temporal_attention # + spatial_attention
+        attention = self.fc_norm(self.dropout(self.fc(attention)) + attention)
+        return attention
 
 
 class SpatioTemporalTransformer(nn.Module):
