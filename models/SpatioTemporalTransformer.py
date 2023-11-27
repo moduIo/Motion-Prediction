@@ -209,8 +209,10 @@ class SpatioTemporalTransformer(nn.Module):
         Returns:
             A Tensor with auto-regressive predictions.
         """
-        attention_seqs = self.joint_embeddings(src_seqs)
+        embed_seqs = self.joint_embeddings(src_seqs)
 
+        # Iterate over the attention layers
+        attention_seqs = embed_seqs
         for i in range(self.attention_layers):
             attention_seqs = self.spatio_temporal_attention[i](attention_seqs)
 
