@@ -21,12 +21,18 @@ class PositionalEncoding(nn.Module):
         pe = pe.unsqueeze(0)
         self.register_buffer("pe", pe)
 
-    def forward(self, x):
+    def forward(self, src_seqs):
         """
         Implements the forward pass on the embedded joints.
+
+        Args:
+            src_seqs: A Tensor of sequences to process.
+
+        Returns:
+            The input sequence mutated to include the positional encodings.
         """
-        x = x + self.pe[:, :x.shape[1], :]
-        return self.dropout(x)
+        src_seqs = src_seqs + self.pe[:, :src_seqs.shape[1], :]
+        return self.dropout(src_seqs)
 
 
 class JointEmbedding(nn.Module):
@@ -78,6 +84,7 @@ class SpatioTemporalAttentionBlock(nn.Module):
 class SpatioTemporalTransformer(nn.Module):
     def __init__(self, num_joints, joint_dim, input_dim, embedding_dim, embedding_dropout):
         """
+        Initializes the ST Transformer.
         """
         super().__init__()
         self.num_joints = num_joints
@@ -92,6 +99,13 @@ class SpatioTemporalTransformer(nn.Module):
 
     def forward(self, src_seqs):
         """
+        Implements the forward function for ST Transformer.
+
+        Args:
+            src_seqs: A Tensor of sequences to process.
+
+        Returns:
+            A Tensor with auto-regressive predictions.
         """
         embeddings_seqs = self.joint_embedding(src_seqs)
         print(f"src_seqs.shape={src_seqs.shape}", f"embeddings_seqs.shape={embeddings_seqs.shape}")
