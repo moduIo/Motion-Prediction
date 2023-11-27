@@ -100,6 +100,8 @@ class SpatioTemporalAttention(nn.Module):
         self.temporal_tau = torch.nn.Softmax(dim=-1)
         self.temporal_norm = torch.nn.BatchNorm1d(self.input_dim)
 
+        # Spatial Attention
+
         # Setup layers
         self.dropout = nn.Dropout(p=dropout)
         self.fc = nn.Linear(self.input_dim, self.input_dim)
@@ -123,17 +125,16 @@ class SpatioTemporalAttention(nn.Module):
         )
         return mask
 
-    def forward(self, src_seqs):
+    def temporal_attention(self, src_seqs):
         """
-        Implements the forward function for ST Attention.
+        Implements the temporal attention mechanism.
 
         Args:
             src_seqs: A (batch_size, seq_len, dim) Tensor of sequences to process.
 
         Returns:
-            A Tensor with attention predictions.
+            A Tensor with temporal attention values.
         """
-        # 1. Compute Temporal Attention
         mask = self._generate_square_subsequent_mask(src_seqs.shape[1])
         normalization = torch.sqrt(torch.tensor(self.attention_dim).float())
         temporal_attentions = []
@@ -148,12 +149,25 @@ class SpatioTemporalAttention(nn.Module):
             v_i = self.temporal_attention_v[i](j_i)
 
             # Compute Attention
-            a_i = (q_i @ k_i.permute((0, 2, 1))) / normalization
+            a_i = (q_i @ k_i.permute(0, 2, 1)) / normalization
             a_i = self.temporal_tau(a_i + mask)
             attention_i = a_i @ v_i
             temporal_attentions.append(attention_i)
 
-        temporal_attention = torch.cat(temporal_attentions, dim=-1)
+        return torch.cat(temporal_attentions, dim=-1)
+
+    def forward(self, src_seqs):
+        """
+        Implements the forward function for ST Attention.
+
+        Args:
+            src_seqs: A (batch_size, seq_len, dim) Tensor of sequences to process.
+
+        Returns:
+            A Tensor with attention predictions.
+        """
+        # 1. Compute Temporal Attention
+        temporal_attention = self.temporal_attention(src_seqs)
         temporal_attention = self.dropout(temporal_attention) + src_seqs
         temporal_attention = self.temporal_norm(temporal_attention.permute(0, 2, 1)).permute(0, 2, 1)
 
