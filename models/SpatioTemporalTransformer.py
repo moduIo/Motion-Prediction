@@ -73,15 +73,42 @@ class JointEmbedding(nn.Module):
             p_i = self.positional_embeddings[i](e_i)
             pos_embeddings.append(p_i)
 
-        pos_seqs = torch.cat(pos_embeddings, dim=-1)
-        return pos_seqs
+        return torch.cat(pos_embeddings, dim=-1)
 
 
-class SpatioTemporalAttentionBlock(nn.Module):
-    def __init__(self):
+class SpatioTemporalAttention(nn.Module):
+    def __init__(self, num_joints, embedding_dim, num_heads=1):
         """
         Initializes the ST Attention.
         """
+        super().__init__()
+        self.num_joints = num_joints
+        self.embedding_dim = embedding_dim
+        self.input_dim = num_joints * embedding_dim
+        self.num_heads = num_heads
+        self.attention_dim = self.input_dim / num_heads
+        assert self.attention_dim.is_integer()
+
+        # Setup layers
+        self.fc = nn.Linear(self.input_dim, self.input_dim)
+
+    def _generate_square_subsequent_mask(self, shape):
+        """
+        Implements a mask for the temporal attention block.
+
+        Args:
+            shape: The size of the mask.
+
+        Returns:
+            A Tensor with attention predictions.
+        """
+        mask = (torch.triu(torch.ones(shape, shape)) == 1).transpose(0, 1)
+        mask = (
+            mask.float()
+            .masked_fill(mask == 0, float("-inf"))
+            .masked_fill(mask == 1, float(0.0))
+        )
+        return mask
 
     def forward(self, src_seqs):
         """
@@ -93,7 +120,10 @@ class SpatioTemporalAttentionBlock(nn.Module):
         Returns:
             A Tensor with attention predictions.
         """
-        ...
+        mask = self._generate_square_subsequent_mask(src_seqs.shape[1])
+        print(mask.shape)
+        print(mask)
+        return self.fc(src_seqs)
 
 
 class SpatioTemporalTransformer(nn.Module):
@@ -109,7 +139,8 @@ class SpatioTemporalTransformer(nn.Module):
         self.embedding_dropout = embedding_dropout
 
         # Define Modules
-        self.joint_embedding = JointEmbedding(num_joints, joint_dim, embedding_dim, embedding_dropout)
+        self.joint_embeddings = JointEmbedding(num_joints, joint_dim, embedding_dim, embedding_dropout)
+        self.st_attention = SpatioTemporalAttention(num_joints, embedding_dim)
         self.output = nn.Linear(num_joints * embedding_dim, num_joints * joint_dim)
 
     def forward(self, src_seqs):
@@ -122,7 +153,13 @@ class SpatioTemporalTransformer(nn.Module):
         Returns:
             A Tensor with auto-regressive predictions.
         """
-        embeddings_seqs = self.joint_embedding(src_seqs)
-        print(f"src_seqs.shape={src_seqs.shape}", f"embeddings_seqs.shape={embeddings_seqs.shape}")
-        output_seqs = self.output(embeddings_seqs)
+        embeddings_seqs = self.joint_embeddings(src_seqs)
+        attention_seqs = self.st_attention(embeddings_seqs)
+        output_seqs = self.output(attention_seqs)
+        print(
+            f"src_seqs.shape={src_seqs.shape}",
+            f"embeddings_seqs.shape={embeddings_seqs.shape}",
+            f"attention_seqs.shape={attention_seqs.shape}",
+            f"output_seqs.shape={output_seqs.shape}",
+        )
         return output_seqs + src_seqs  # Residual connection
