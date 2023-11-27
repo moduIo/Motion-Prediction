@@ -167,7 +167,7 @@ class SpatioTemporalAttention(nn.Module):
 
 
 class SpatioTemporalTransformer(nn.Module):
-    def __init__(self, num_joints, joint_dim, input_dim, embedding_dim, embedding_dropout):
+    def __init__(self, num_joints, joint_dim, input_dim, embedding_dim, embedding_dropout, attention_layers=2):
         """
         Initializes the ST Transformer.
         """
@@ -177,10 +177,12 @@ class SpatioTemporalTransformer(nn.Module):
         self.input_dim = input_dim
         self.embedding_dim = embedding_dim
         self.embedding_dropout = embedding_dropout
+        self.attention_layers = attention_layers
 
         # Define Modules
         self.joint_embeddings = JointEmbedding(num_joints, joint_dim, embedding_dim, embedding_dropout)
-        self.spatio_temporal_attention = SpatioTemporalAttention(num_joints, embedding_dim)
+        self.spatio_temporal_attention = nn.ModuleList(
+            [SpatioTemporalAttention(num_joints, embedding_dim) for _ in range(attention_layers)])
         self.output = nn.Linear(num_joints * embedding_dim, num_joints * joint_dim)
 
     def forward(self, src_seqs):
@@ -193,12 +195,15 @@ class SpatioTemporalTransformer(nn.Module):
         Returns:
             A Tensor with auto-regressive predictions.
         """
-        embeddings_seqs = self.joint_embeddings(src_seqs)
-        attention_seqs = self.spatio_temporal_attention(embeddings_seqs)
+        attention_seqs = self.joint_embeddings(src_seqs)
+
+        for i in range(self.attention_layers):
+            attention_seqs = self.spatio_temporal_attention[i](attention_seqs)
+
         output_seqs = self.output(attention_seqs)
+
         print(
             f"src_seqs.shape={src_seqs.shape}",
-            f"embeddings_seqs.shape={embeddings_seqs.shape}",
             f"attention_seqs.shape={attention_seqs.shape}",
             f"output_seqs.shape={output_seqs.shape}",
         )
