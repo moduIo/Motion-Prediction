@@ -11,7 +11,7 @@ def main(model_name: str = None, target_type: str = None) -> None:
 
     Args:
         model_name: The name of the model (used to select which model to run)
-        target_type: The type of target (used to determine post processing logic)
+        target_type: The type of target (used to determine post-processing logic)
 
     Returns:
         None
@@ -32,7 +32,7 @@ def main(model_name: str = None, target_type: str = None) -> None:
     num_training_sequences = len(datasets["train"]) * batch_size
 
     if model_name == ModelEnum.SPATIO_TEMPORAL_TRANSFORMER:
-        model = SpatioTemporalTransformer(num_joints, joint_dim, raw_dim, embedding_dim)
+        model = SpatioTemporalTransformer(num_joints, joint_dim, raw_dim, embedding_dim, .2)
     else:
         print("Incorrect program usage.")
         return
