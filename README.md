@@ -1,5 +1,10 @@
 # Motion-Prediction
-PyTorch implementation of Spatio-temporal Transformers (https://github.com/eth-ait/motion-transformer) for 3D Motion Prediction on AMASS
+PyTorch implementation of Spatio-temporal Transformers (https://github.com/eth-ait/motion-transformer) for 3D Motion Prediction on AMASS.
+
+# Project Structure
+1. `models/` contains implementations of various models,
+2. `utils/` contains helper functions,
+3. `main.py` is the entrypoint for the program.
 
 # Installation
 
