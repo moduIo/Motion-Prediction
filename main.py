@@ -11,7 +11,7 @@ def main(model_name: str = None, target_type: str = None) -> None:
 
     Args:
         model_name: The name of the model (used to select which model to run)
-        target_type: The type of target (used to determine post processing logic)
+        target_type: The type of target (used to determine post-processing logic)
 
     Returns:
         None
@@ -23,7 +23,7 @@ def main(model_name: str = None, target_type: str = None) -> None:
     datasets = prepare_dataset(fpath, batch_size, device)
 
     # Setup Model
-    _, seq_len, raw_dim = next(iter(datasets["train"]))[1].shape
+    _, seq_len, raw_dim = next(iter(datasets["train"]))[0].shape
     embedding_dim = 64  # Size of embeddings
     num_joints = 24  # AMASS DIP has 24 joints
     joint_dim = raw_dim // num_joints
@@ -32,7 +32,7 @@ def main(model_name: str = None, target_type: str = None) -> None:
     num_training_sequences = len(datasets["train"]) * batch_size
 
     if model_name == ModelEnum.SPATIO_TEMPORAL_TRANSFORMER:
-        model = SpatioTemporalTransformer(num_joints, joint_dim, raw_dim, embedding_dim)
+        model = SpatioTemporalTransformer(num_joints, joint_dim, seq_len, raw_dim, embedding_dim, .2)
     else:
         print("Incorrect program usage.")
         return
