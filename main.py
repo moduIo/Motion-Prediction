@@ -5,7 +5,7 @@ from models.BiDirectionalTransformer import BiDirectionalTransformer
 from utils.dataset import prepare_dataset, generate_auto_regressive_targets
 from utils.types import ModelEnum, TargetEnum
 from matplotlib import pyplot as plt
-
+from utils.mask_generator import BatchJointMaskGenerator
 import argparse
 
 def main() -> None:
@@ -28,28 +28,28 @@ def main() -> None:
     model_info.add_argument("--model",choices =["spatio-temporal-transformer","rnn","rnn_a","lstm","lstm_a","seq2seq","bi-directional-transformer"],default="STT")
     model_info.add_argument("-tt","--target_type",choices=["default","auto-regressive","pretrain"],default="default")
     model_info.add_argument("-dp","--data_path",default="./data/sampled/aa/")
-    model_info.add_argument("-sfreq","--save_model_frequency",default=5)
+    model_info.add_argument("-sfreq","--save_model_frequency",default=5, type=int)
     model_info.add_argument("-spath","--save_model_path",default="./model_saves/")
 
     parameters = parser.add_argument_group("Model Parameters")
-    parameters.add_argument("-b","--batch_size",default=64)
-    parameters.add_argument("-emb","--embedding_dim",default=64)
-    parameters.add_argument("-ep","--epochs",default=10)
-    parameters.add_argument("-h","--nhead",default=12)
-    parameters.add_argument("-enc","--nlayers",default=6)
-    parameters.add_argument("-f","--feedforward_dim",default=1024)
-    parameters.add_argument("-do","--dropout",default=0.1)
+    parameters.add_argument("-b","--batch_size",default=32, type=int)
+    parameters.add_argument("-emb","--embedding_dim",default=128, type=int)
+    parameters.add_argument("-ep","--epochs",default=100, type=int)
+    parameters.add_argument("-nh","--nhead",default=8, type=int)
+    parameters.add_argument("-enc","--nlayers",default=8, type=int)
+    parameters.add_argument("-ff","--feedforward_dim",default=256, type=int)
+    parameters.add_argument("-do","--dropout",default=0.1, type=float)
 
     args = parser.parse_args()
 
     # Process train, val, test datasets
     fpath = args.data_path
     batch_size = args.batch_size
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = 'cpu' #'cuda' if torch.cuda.is_available() else 'cpu'
     datasets = prepare_dataset(fpath, batch_size, device)
 
     # Setup Model
-    _, seq_len, raw_dim = next(iter(datasets["train"]))[0].shap
+    _, seq_len, raw_dim = next(iter(datasets["train"]))[0].shape
     
     #Hyperparameters
     embedding_dim = args.embedding_dim  # Size of embeddings
@@ -70,7 +70,9 @@ def main() -> None:
                                           seq_len,
                                           raw_dim,
                                           embedding_dim,
+                                          ff_dim,
                                           dropout,
+                                          nhead,
                                           nlayers)
     elif args.model == ModelEnum.BIDIRECTIONAL_TRANSFORMER.value:
         model = BiDirectionalTransformer(num_joints,
@@ -110,12 +112,12 @@ def main() -> None:
     validation_losses = []
     for epoch in range(epochs):
         epoch_loss = 0
-        for iterations, (src_seqs, tgt_seqs) in enumerate(datasets["train"]):
+        for _, (src_seqs, tgt_seqs) in enumerate(datasets["train"]):
             opt.zero_grad()
             
-            src_seq, tgt_seqs = src_seqs.to(device).float(), tgt_seqs.to(device).float()
+            src_seqs, tgt_seqs = src_seqs.to(device).float(), tgt_seqs.to(device).float()
             
-            if args.target_type == TargetEnum.PRETRAIN.value:
+            if args.target_type == TargetEnum.PRE_TRAIN.value:
                 src_mask = mask.mask_joints(src_seqs)
                 outputs = model(src_mask)
             else:
@@ -123,6 +125,8 @@ def main() -> None:
 
             if args.target_type == TargetEnum.AUTO_REGRESSIVE.value:
                 loss = criterion(outputs, generate_auto_regressive_targets(src_seqs, tgt_seqs))
+            elif args.target_type == TargetEnum.PRE_TRAIN.value:
+                loss = criterion(outputs, src_seqs)
             else:
                 loss = criterion(outputs, tgt_seqs)
 
@@ -138,14 +142,25 @@ def main() -> None:
         epoch_val_loss = 0
         with torch.no_grad():
             for val_iter, (src_seqs, tgt_seqs) in enumerate(datasets["validation"]):
-                max_len = tgt_seqs.shape[1]
+
                 src_seqs, tgt_seqs = (
                     src_seqs.to(device).float(),
                     tgt_seqs.to(device).float()
                 )
-                outputs = model(src_seqs, max_len=max_len)
 
-                loss = criterion(outputs, tgt_seqs)
+                if args.target_type == TargetEnum.PRE_TRAIN.value:
+                    src_mask = mask.mask_joints(src_seqs)
+                    outputs = model(src_mask)
+                else:
+                    outputs = model(src_seqs)
+
+                if args.target_type == TargetEnum.AUTO_REGRESSIVE.value:
+                    loss = criterion(outputs, generate_auto_regressive_targets(src_seqs, tgt_seqs))
+                elif args.target_type == TargetEnum.PRE_TRAIN.value:
+                    loss = criterion(outputs, src_seqs)
+                else:
+                    loss = criterion(outputs, tgt_seqs)
+
                 epoch_val_loss += loss.item()
         validation_losses.append(epoch_val_loss / ((val_iter + 1) * batch_size))
 
