@@ -1,5 +1,10 @@
 # Motion-Prediction
-3D Motion Prediction on AMASS
+PyTorch implementation of Spatio-temporal Transformers (https://github.com/eth-ait/motion-transformer) for 3D Motion Prediction on AMASS.
+
+# Project Structure
+1. `models/` contains implementations of various models,
+2. `utils/` contains helper functions,
+3. `main.py` is the entrypoint for the program.
 
 # Installation
 
@@ -31,19 +36,15 @@ $ pip install -e fairmotion
 ## 3. Training Example
 After preprocessing, we have data in a format similar to that given in the sampled example data `data/sampled` directory.
 ```
-(motion-prediction) MacBook-Air:fairmotion tim$ python fairmotion/tasks/motion_prediction/training.py --save-model-path models/ --preprocessed-path data/sampled/aa/ --epochs 100
+(motion-prediction) MacBook-Air:fairmotion tim$ python main.py
 ```
 
 ### Output:
 ```
-[2023-11-19 16:27:41] [('architecture', 'seq2seq'), ('batch_size', 64), ('device', None), ('epochs', 100), ('hidden_dim', 1024), ('lr', None), ('num_layers', 1), ('optimizer', 'sgd'), ('preprocessed_path', '../data/output-sample/aa/'), ('save_model_frequency', 5), ('save_model_path', '../models/'), ('shuffle', False)]
-[2023-11-19 16:27:41] Using device: cpu
-[2023-11-19 16:27:41] Preparing dataset...
-[2023-11-19 16:28:11] Before training: Training loss 0.01117816984122264 | Validation loss 0.013342576199742417
-[2023-11-19 16:28:11] Training model...
-[2023-11-19 16:28:11] Running epoch 0 | teacher_forcing_ratio=1.0
-[2023-11-19 16:33:28] Training loss 0.01009094680123338 | Validation loss 0.01287927047306977 | Iterations 12
-[2023-11-19 16:33:40] Validation MAE: {6: 14.479043099299663, 12: 29.284760185296342, 18: 43.98428295044982, 24: 58.75325199083912}
-[2023-11-19 16:33:41] Running epoch 1 | teacher_forcing_ratio=0.98
+Training model...
+src_seqs.shape=torch.Size([64, 120, 72])
+ attention_seqs.shape=torch.Size([64, 120, 1536])
+ output_seqs.shape=torch.Size([64, 120, 72])
+Training loss 235.84820556640625 | 
 ```
 

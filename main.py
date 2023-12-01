@@ -36,43 +36,56 @@ def main() -> None:
     parameters.add_argument("-emb","--embedding_dim",default=64)
     parameters.add_argument("-ep","--epochs",default=10)
     parameters.add_argument("-h","--nhead",default=12)
-    parameters.add_argument("-enc","--encoder_layers",default=6)
+    parameters.add_argument("-enc","--nlayers",default=6)
     parameters.add_argument("-f","--feedforward_dim",default=1024)
+    parameters.add_argument("-do","--dropout",default=0.1)
 
     args = parser.parse_args()
 
     # Process train, val, test datasets
     fpath = args.data_path
     batch_size = args.batch_size
-    device = 'cpu'
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     datasets = prepare_dataset(fpath, batch_size, device)
 
     # Setup Model
-    _, seq_len, raw_dim = next(iter(datasets["train"]))[0].shape
+    _, seq_len, raw_dim = next(iter(datasets["train"]))[0].shap
+    
+    #Hyperparameters
     embedding_dim = args.embedding_dim  # Size of embeddings
     num_joints = 24  # AMASS DIP has 24 joints
-    joint_dim = raw_dim // num_joints
+    joint_dim = raw_dim // num_joints # 3 for -aa and 9 for -rotmat
     epochs = args.epochs
-    # Loss per epoch is the average loss per sequence
+    dropout = args.dropout
+    nlayers = args.nlayers
+    ff_dim = args.feedforward_dim
+    nhead = args.nhead
+    
     num_training_sequences = len(datasets["train"]) * batch_size
-
+    
+    #Model Selector
     if args.model == ModelEnum.SPATIO_TEMPORAL_TRANSFORMER:
-        model = SpatioTemporalTransformer(num_joints, joint_dim, raw_dim, embedding_dim, .2)
+        model = SpatioTemporalTransformer(num_joints,
+                                          joint_dim,
+                                          seq_len,
+                                          raw_dim,
+                                          embedding_dim,
+                                          dropout,
+                                          nlayers)
     elif args.model == ModelEnum.BI_DIRECTIONAL_TRANSFORMER:
         model = BiDirectionalTransformer(num_joints,
                                          joint_dim,
                                          raw_dim,
                                          embedding_dim,
-                                         nhead=2,
-                                         num_encoder_layers=1,
-                                         dim_feedforward=1024,
-                                         dropout=0.1).to(device)
+                                         nhead=nhead,
+                                         num_encoder_layers=nlayers,
+                                         dim_feedforward=ff_dim,
+                                         dropout=dropout).to(device)
         mask = BatchJointMaskGenerator(num_joints,
                                        joint_dim,
                                        mask_value=-2,
                                        time_step_mask_prob=1.0,
                                        joint_mask_prob=1/24)
-        pass
     elif args.model == "RNN":
         pass
     elif args.model == "RNN_a":
@@ -100,12 +113,12 @@ def main() -> None:
         for iterations, (src_seqs, tgt_seqs) in enumerate(datasets["train"]):
             opt.zero_grad()
             
+            src_seq, tgt_seqs = src_seqs.to(device).float(), tgt.to(device).float()
+            
             if args.target_type == TargetEnum.PRETRAIN:
                 src_mask = mask.mask_joints(src_seqs)
                 outputs = model(src_mask)
-                pass
             else:
-                src_seqs, tgt_seqs = src_seqs.to(device).float(), tgt_seqs.to(device).float()
                 outputs = model(src_seqs)
 
             if args.target_type == TargetEnum.AUTO_REGRESSIVE:
@@ -127,8 +140,8 @@ def main() -> None:
             for val_iter, (src_seqs, tgt_seqs) in enumerate(datasets["validation"]):
                 max_len = tgt_seqs.shape[1]
                 src_seqs, tgt_seqs = (
-                    src_seqs.to(device),
-                    tgt_seqs.to(device)
+                    src_seqs.to(device).float(),
+                    tgt_seqs.to(device).float()
                 )
                 outputs = model(src_seqs, max_len=max_len)
 
