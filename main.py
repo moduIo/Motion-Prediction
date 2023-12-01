@@ -113,7 +113,7 @@ def main() -> None:
         for iterations, (src_seqs, tgt_seqs) in enumerate(datasets["train"]):
             opt.zero_grad()
             
-            src_seq, tgt_seqs = src_seqs.to(device).float(), tgt.to(device).float()
+            src_seq, tgt_seqs = src_seqs.to(device).float(), tgt_seqs.to(device).float()
             
             if args.target_type == TargetEnum.PRETRAIN:
                 src_mask = mask.mask_joints(src_seqs)
