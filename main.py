@@ -5,7 +5,7 @@ from models.BiDirectionalTransformer import BiDirectionalTransformer
 from utils.dataset import prepare_dataset, generate_auto_regressive_targets
 from utils.types import ModelEnum, TargetEnum
 from matplotlib import pyplot as plt
-from utils.mask_generator import BatchJointMaskGenerator
+
 import argparse
 
 def main() -> None:
@@ -64,7 +64,7 @@ def main() -> None:
     num_training_sequences = len(datasets["train"]) * batch_size
     
     #Model Selector
-    if args.model == ModelEnum.SPATIO_TEMPORAL_TRANSFORMER:
+    if args.model == ModelEnum.SPATIO_TEMPORAL_TRANSFORMER.value:
         model = SpatioTemporalTransformer(num_joints,
                                           joint_dim,
                                           seq_len,
@@ -72,7 +72,7 @@ def main() -> None:
                                           embedding_dim,
                                           dropout,
                                           nlayers)
-    elif args.model == ModelEnum.BI_DIRECTIONAL_TRANSFORMER:
+    elif args.model == ModelEnum.BIDIRECTIONAL_TRANSFORMER.value:
         model = BiDirectionalTransformer(num_joints,
                                          joint_dim,
                                          raw_dim,
@@ -115,13 +115,13 @@ def main() -> None:
             
             src_seq, tgt_seqs = src_seqs.to(device).float(), tgt_seqs.to(device).float()
             
-            if args.target_type == TargetEnum.PRETRAIN:
+            if args.target_type == TargetEnum.PRETRAIN.value:
                 src_mask = mask.mask_joints(src_seqs)
                 outputs = model(src_mask)
             else:
                 outputs = model(src_seqs)
 
-            if args.target_type == TargetEnum.AUTO_REGRESSIVE:
+            if args.target_type == TargetEnum.AUTO_REGRESSIVE.value:
                 loss = criterion(outputs, generate_auto_regressive_targets(src_seqs, tgt_seqs))
             else:
                 loss = criterion(outputs, tgt_seqs)
