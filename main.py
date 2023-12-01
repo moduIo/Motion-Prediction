@@ -28,11 +28,14 @@ def main(model_name: str = None, target_type: str = None) -> None:
     num_joints = 24  # AMASS DIP has 24 joints
     joint_dim = raw_dim // num_joints
     epochs = 10
+    attention_dropout = .2
+    attention_layers = 2
     # Loss per epoch is the average loss per sequence
     num_training_sequences = len(datasets["train"]) * batch_size
 
     if model_name == ModelEnum.SPATIO_TEMPORAL_TRANSFORMER:
-        model = SpatioTemporalTransformer(num_joints, joint_dim, seq_len, raw_dim, embedding_dim, .2)
+        model = SpatioTemporalTransformer(
+            num_joints, joint_dim, seq_len, raw_dim, embedding_dim, attention_dropout, attention_layers)
     else:
         print("Incorrect program usage.")
         return

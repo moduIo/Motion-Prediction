@@ -4,7 +4,7 @@ import torch.nn as nn
 
 
 class PositionalEncoding(nn.Module):
-    def __init__(self, d_model, dropout=0.5, max_len=5000):
+    def __init__(self, d_model, dropout=0.5, max_len=300):
         """
         Initializes a positional embedding layer for each joint.
         """
@@ -77,7 +77,7 @@ class JointEmbedding(nn.Module):
 
 
 class SpatioTemporalAttention(nn.Module):
-    def __init__(self, num_joints, seq_len, embedding_dim, num_heads=1, dropout=0.1):
+    def __init__(self, num_joints, seq_len, embedding_dim, num_heads=2, dropout=0.1):
         """
         Initializes the ST Attention.
         """
@@ -92,20 +92,32 @@ class SpatioTemporalAttention(nn.Module):
         self.attention_dim = int(self.attention_dim)
 
         # Temporal Attention
-        self.temporal_attention_q = nn.ModuleList(  # TODO: Handle multiple attn heads
-            [nn.Linear(self.embedding_dim, self.attention_dim, bias=False) for _ in range(num_joints)])
-        self.temporal_attention_k = nn.ModuleList(  # TODO: Handle multiple attn heads
-            [nn.Linear(self.embedding_dim, self.attention_dim, bias=False) for _ in range(num_joints)])
-        self.temporal_attention_v = nn.ModuleList(  # TODO: Handle multiple attn heads
-            [nn.Linear(self.embedding_dim, self.attention_dim, bias=False) for _ in range(num_joints)])
+        self.temporal_attention_q = nn.ModuleList([
+            nn.ModuleList([nn.Linear(self.embedding_dim, self.attention_dim, bias=False) for _ in range(num_joints)])
+            for _ in range(num_heads)
+        ])
+        self.temporal_attention_k = nn.ModuleList([
+            nn.ModuleList([nn.Linear(self.embedding_dim, self.attention_dim, bias=False) for _ in range(num_joints)])
+            for _ in range(num_heads)
+        ])
+        self.temporal_attention_v = nn.ModuleList([
+            nn.ModuleList([nn.Linear(self.embedding_dim, self.attention_dim, bias=False) for _ in range(num_joints)])
+            for _ in range(num_heads)
+        ])
+        self.temporal_head_projection = nn.Linear(self.input_dim, self.input_dim)
         self.temporal_tau = nn.Softmax(dim=-1)
         self.temporal_norm = nn.BatchNorm1d(self.input_dim)
 
         # Spatial Attention
-        self.spatial_attention_q = nn.ModuleList(
-            [nn.Linear(self.embedding_dim, self.attention_dim, bias=False) for _ in range(num_joints)])
-        self.spatial_attention_k = nn.Linear(self.embedding_dim, self.attention_dim, bias=False)
-        self.spatial_attention_v = nn.Linear(self.embedding_dim, self.attention_dim, bias=False)
+        self.spatial_attention_q = nn.ModuleList([
+            nn.ModuleList([nn.Linear(self.embedding_dim, self.attention_dim, bias=False) for _ in range(num_joints)])
+            for _ in range(num_heads)
+        ])
+        self.spatial_attention_k = nn.ModuleList(
+            [nn.Linear(self.embedding_dim, self.attention_dim, bias=False) for _ in range(num_heads)])
+        self.spatial_attention_v = nn.ModuleList(
+            [nn.Linear(self.embedding_dim, self.attention_dim, bias=False) for _ in range(num_heads)])
+        self.spatial_head_projection = nn.Linear(self.input_dim, self.input_dim)
         self.spatial_tau = nn.Softmax(dim=-1)
         self.spatial_norm = nn.BatchNorm1d(self.input_dim)
 
@@ -144,24 +156,32 @@ class SpatioTemporalAttention(nn.Module):
             A Tensor with temporal attention values.
         """
         mask = self._generate_square_subsequent_mask(src_seqs.shape[1])
+
         temporal_attentions = []
+        for h in range(self.num_heads):
+            temporal_joint_attentions = []
 
-        for i in range(self.num_joints):
-            # Slice sequence to the specific joint
-            j_i = src_seqs[:, :, i * self.embedding_dim:(i+1) * self.embedding_dim]
+            for i in range(self.num_joints):
+                # Slice sequence to the specific joint
+                j_i = src_seqs[:, :, i * self.embedding_dim:(i+1) * self.embedding_dim]
 
-            # Setup Projections
-            q_i = self.temporal_attention_q[i](j_i)
-            k_i = self.temporal_attention_k[i](j_i)
-            v_i = self.temporal_attention_v[i](j_i)
+                # Setup Projections
+                q_i = self.temporal_attention_q[h][i](j_i)
+                k_i = self.temporal_attention_k[h][i](j_i)
+                v_i = self.temporal_attention_v[h][i](j_i)
 
-            # Compute Attention
-            a_i = (q_i @ k_i.permute(0, 2, 1)) / self.attention_dim_norm
-            a_i = self.temporal_tau(a_i + mask)
-            attention_i = a_i @ v_i
-            temporal_attentions.append(attention_i)
+                # Compute Attention
+                a_i = (q_i @ k_i.permute(0, 2, 1)) / self.attention_dim_norm
+                a_i = self.temporal_tau(a_i + mask)
+                attention_i = a_i @ v_i
+                temporal_joint_attentions.append(attention_i)
 
-        return torch.cat(temporal_attentions, dim=-1)
+            temporal_attentions.append(torch.cat(temporal_joint_attentions, dim=-1))
+
+        # Combine attention head results
+        temporal_attention = torch.cat(temporal_attentions, dim=-1)
+        temporal_attention = self.temporal_head_projection(temporal_attention)
+        return temporal_attention
 
     def _spatial_attention(self, src_seqs):
         """
@@ -176,29 +196,37 @@ class SpatioTemporalAttention(nn.Module):
         batch_size, _, _ = src_seqs.shape
 
         spatial_attentions = []
-        for i in range(self.seq_len):
-            # Slice sequence to the embedding at each timestep
-            #   and reshape to (batch_size, num_joints, embedding_dimension)
-            e_i = torch.reshape(src_seqs[:, i, :], (batch_size, -1, self.embedding_dim))
+        for h in range(self.num_heads):
+            spatial_attentions_over_time = []
 
-            # Setup Projections
-            q_is = []
-            for j in range(self.num_joints):
-                # Each joint embedding has it's own projection
-                q_i = self.spatial_attention_q[j](e_i[:, j, :])
-                q_is.append(torch.reshape(q_i, (q_i.shape[0], 1, q_i.shape[1])))
+            for i in range(self.seq_len):
+                # Slice sequence to the embedding at each timestep
+                #   and reshape to (batch_size, num_joints, embedding_dimension)
+                e_i = torch.reshape(src_seqs[:, i, :], (batch_size, -1, self.embedding_dim))
 
-            q_i = torch.cat(q_is, dim=1)
-            k_i = self.spatial_attention_k(e_i)
-            v_i = self.spatial_attention_v(e_i)
+                # Setup Projections
+                q_is = []
+                for j in range(self.num_joints):
+                    # Each joint embedding has it's own projection
+                    q_ij = self.spatial_attention_q[h][j](e_i[:, j, :])
+                    q_is.append(torch.reshape(q_ij, (q_ij.shape[0], 1, q_ij.shape[1])))
 
-            # Compute Attention
-            a_i = (q_i @ k_i.permute(0, 2, 1)) / self.attention_dim_norm
-            a_i = self.spatial_tau(a_i)
-            attention_i = torch.reshape(a_i @ v_i, (batch_size, 1, -1))
-            spatial_attentions.append(attention_i)
+                q_i = torch.cat(q_is, dim=1)
+                k_i = self.spatial_attention_k[h](e_i)
+                v_i = self.spatial_attention_v[h](e_i)
 
-        return torch.cat(spatial_attentions, dim=1)
+                # Compute Attention
+                a_i = (q_i @ k_i.permute(0, 2, 1)) / self.attention_dim_norm
+                a_i = self.spatial_tau(a_i)
+                attention_i = torch.reshape(a_i @ v_i, (batch_size, 1, -1))
+                spatial_attentions_over_time.append(attention_i)
+
+            spatial_attentions.append(torch.cat(spatial_attentions_over_time, dim=1))
+
+        # Combine attention head results
+        spatial_attention = torch.cat(spatial_attentions, dim=-1)
+        spatial_attention = self.spatial_head_projection(spatial_attention)
+        return spatial_attention
 
     def forward(self, src_seqs):
         """
