@@ -325,4 +325,4 @@ class SpatioTemporalTransformer(nn.Module):
 
         output_seqs = self.output(attention_seqs)
 
-        return output_seqs
+        return output_seqs + src_seqs
