@@ -77,7 +77,7 @@ class JointEmbedding(nn.Module):
 
 
 class SpatioTemporalAttention(nn.Module):
-    def __init__(self, num_joints, seq_len, embedding_dim, num_heads=2, dropout=0.1):
+    def __init__(self, num_joints, seq_len, embedding_dim = 128, ff_dim=256, num_heads=8, dropout=0.1):
         """
         Initializes the ST Attention.
         """
@@ -90,6 +90,11 @@ class SpatioTemporalAttention(nn.Module):
         self.attention_dim = self.embedding_dim / num_heads
         assert self.attention_dim.is_integer()
         self.attention_dim = int(self.attention_dim)
+        self.feedforward_dim = ff_dim
+
+        #Attention Weights
+        self.temporal_attention_weights = []
+        self.spatial_attention_weights = []
 
         # Temporal Attention
         self.temporal_attention_q = nn.ModuleList([
@@ -124,7 +129,11 @@ class SpatioTemporalAttention(nn.Module):
         # Setup layers
         self.attention_dim_norm = torch.sqrt(torch.tensor(self.attention_dim).float())
         self.dropout = nn.Dropout(p=dropout)
-        self.fc = nn.Linear(self.input_dim, self.input_dim)
+
+        # Feed Forward Layers
+        self.fc = nn.Sequential(nn.Linear(self.input_dim, ff_dim),
+                                nn.ReLU(),                         
+                                nn.Linear(ff_dim, self.input_dim))
         self.fc_norm = torch.nn.BatchNorm1d(self.input_dim)
 
     def _generate_square_subsequent_mask(self, shape):
@@ -227,6 +236,12 @@ class SpatioTemporalAttention(nn.Module):
         spatial_attention = torch.cat(spatial_attentions, dim=-1)
         spatial_attention = self.spatial_head_projection(spatial_attention)
         return spatial_attention
+    
+    def get_temporal_attention_weights(self):
+        return self.temporal_attention_weights
+
+    def get_spatial_attention_weights(self):
+        return self.spatial_attention_weights
 
     def forward(self, src_seqs):
         """
@@ -238,6 +253,7 @@ class SpatioTemporalAttention(nn.Module):
         Returns:
             A Tensor with attention predictions.
         """
+
         # 1. Compute Temporal Attention
         temporal_attention = self._temporal_attention(src_seqs)
         temporal_attention = self.dropout(temporal_attention) + src_seqs
@@ -252,11 +268,13 @@ class SpatioTemporalAttention(nn.Module):
         attention = temporal_attention + spatial_attention
         attention = self.dropout(self.fc(attention)) + attention
         attention = self.fc_norm(attention.permute(0, 2, 1)).permute(0, 2, 1)
+
         return attention
 
 
 class SpatioTemporalTransformer(nn.Module):
-    def __init__(self, num_joints, joint_dim, seq_len, input_dim, embedding_dim, embedding_dropout, attention_layers=2):
+
+    def __init__(self, num_joints, joint_dim, seq_len, input_dim, embedding_dim = 128, ff_dim=256, embedding_dropout = 0.1, num_heads = 8, attention_layers=8):
         """
         Initializes the ST Transformer.
         """
@@ -268,11 +286,15 @@ class SpatioTemporalTransformer(nn.Module):
         self.embedding_dim = embedding_dim
         self.embedding_dropout = embedding_dropout
         self.attention_layers = attention_layers
+        self.num_heads = num_heads
+
+        self.temporal_attention_weights_all_layers = []
+        self.spatial_attention_weights_all_layers = []
 
         # Define Modules
         self.joint_embeddings = JointEmbedding(num_joints, joint_dim, embedding_dim, embedding_dropout)
         self.spatio_temporal_attention = nn.ModuleList(
-            [SpatioTemporalAttention(num_joints, seq_len, embedding_dim) for _ in range(attention_layers)])
+            [SpatioTemporalAttention(num_joints, seq_len, embedding_dim, ff_dim, num_heads, embedding_dropout) for _ in range(attention_layers)])
         self.output = nn.Linear(num_joints * embedding_dim, num_joints * joint_dim)
 
     def forward(self, src_seqs):
@@ -287,16 +309,20 @@ class SpatioTemporalTransformer(nn.Module):
         """
         embed_seqs = self.joint_embeddings(src_seqs)
 
+        # Clear previous weights
+        self.temporal_attention_weights_all_layers = []
+        self.spatial_attention_weights_all_layers = []
+
         # Iterate over the spatio-temporal attention layers
         attention_seqs = embed_seqs
+
         for i in range(self.attention_layers):
             attention_seqs = self.spatio_temporal_attention[i](attention_seqs)
 
+            if i == 0:
+                self.temporal_attention_weights_all_layers.append(self.spatio_temporal_attention[i].get_temporal_attention_weights())
+                self.spatial_attention_weights_all_layers.append(self.spatio_temporal_attention[i].get_spatial_attention_weights())
+
         output_seqs = self.output(attention_seqs)
 
-        print(
-            f"src_seqs.shape={src_seqs.shape}\n",
-            f"attention_seqs.shape={attention_seqs.shape}\n",
-            f"output_seqs.shape={output_seqs.shape}",
-        )
-        return output_seqs + src_seqs  # Residual connection
+        return output_seqs + src_seqs
