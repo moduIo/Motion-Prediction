@@ -18,7 +18,7 @@ setup(
         "pyrender==0.1.39",
         "scikit-learn",
         "scipy",
-        "torch",
+        "torch --extra-index-url https://download.pytorch.org/whl/cu113",
         "tqdm",
         "pyglet==1.5.27",
         "PyOpenGL==3.1.0",
