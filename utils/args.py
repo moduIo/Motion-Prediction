@@ -42,7 +42,7 @@ def parse_train_args(args):
     model_info.add_argument(
         "-tt",
         "--target_type",
-        choices=["default", "auto-regressive", "pretrain"],
+        choices=["default", "auto-regressive", "pre-train"],
         default="default",
     )
     model_info.add_argument("-dp", "--data_path", default="./data/sampled/aa/")
