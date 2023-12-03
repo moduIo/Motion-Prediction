@@ -12,7 +12,7 @@ def train(args):
     # Process train, val, test datasets
     fpath = args.data_path
     batch_size = args.batch_size
-    device = "cpu"  # TODO: 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     datasets = prepare_dataset(fpath, batch_size, device)
 
     # Get joint dimensions for PerJointMSELoss
