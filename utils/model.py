@@ -25,6 +25,8 @@ def get_model(args, datasets, device):
     nlayers = args.nlayers
     ff_dim = args.feedforward_dim
     nhead = args.nhead
+    seq_mask_prob = args.seqmaskprob
+    joint_mask_prob = args.jointmaskprob
 
     if args.model == ModelEnum.SPATIO_TEMPORAL_TRANSFORMER.value:
         model = SpatioTemporalTransformer(
@@ -67,8 +69,8 @@ def get_model(args, datasets, device):
             num_joints,
             joint_dim,
             mask_value=-2,
-            time_step_mask_prob=1.0,
-            joint_mask_prob=1 / 24,
+            time_step_mask_prob=seq_mask_prob,
+            joint_mask_prob=joint_mask_prob,
         )
     else:
         mask = None

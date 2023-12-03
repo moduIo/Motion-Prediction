@@ -3,7 +3,7 @@ from enum import Enum
 
 class ModelEnum(Enum):
     SPATIO_TEMPORAL_TRANSFORMER = "spatio-temporal-transformer"
-    BIDIRECTIONAL_TRANSFORMER = "bi-drectional-transformer"
+    BIDIRECTIONAL_TRANSFORMER = "bi-directional-transformer"
 
 
 class TargetEnum(Enum):
