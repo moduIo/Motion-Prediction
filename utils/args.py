@@ -105,6 +105,8 @@ def parse_predict_args(args):
     parameters.add_argument("-enc", "--nlayers", default=8, type=int)
     parameters.add_argument("-ff", "--feedforward_dim", default=256, type=int)
     parameters.add_argument("-do", "--dropout", default=0.1, type=float)
+    parameters.add_argument("-mp1", "--seqmaskprob", default=1.0, type=float)
+    parameters.add_argument("-mp2", "--jointmaskprob", default=0.05, type=float)
 
     return parser.parse_known_args(args)
 
