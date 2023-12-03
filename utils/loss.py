@@ -20,6 +20,7 @@ def compute_validation_loss(args, model, datasets, criterion, device, mask):
         A tuple of the loss and the val_iter
     """
     epoch_val_loss = 0
+    model.eval()
     with torch.no_grad():
         for val_iter, (src_seqs, tgt_seqs) in enumerate(datasets["validation"]):
 
@@ -46,4 +47,5 @@ def compute_validation_loss(args, model, datasets, criterion, device, mask):
             epoch_val_loss += loss.item()
             break  # TODO: Delete this
 
+    model.train()
     return epoch_val_loss, val_iter

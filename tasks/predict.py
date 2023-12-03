@@ -9,7 +9,7 @@ def predict(args):
     # Setup dataset
     fpath = args.data_path
     batch_size = args.batch_size
-    device = "cpu"  # TODO: 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     datasets = prepare_dataset(fpath, batch_size, device)
     num_test_sequences = len(datasets["test"]) * batch_size
     _, output_seq_len, raw_dim = next(iter(datasets["test"]))[1].shape
@@ -24,16 +24,19 @@ def predict(args):
     print(f"=== Computing test error with args={args} ===")
     criterion = torch.nn.MSELoss(reduction="sum")
 
-    test_loss = 0
-    for _, (src_seqs, tgt_seqs) in enumerate(datasets["test"]):
-        src_seqs, tgt_seqs = (
-            src_seqs.to(device).float(),
-            tgt_seqs.to(device).float(),
-        )
-        outputs = generate_motion(model, src_seqs, output_seq_len)
-        loss = criterion(outputs, tgt_seqs)
-        test_loss += loss.item()
+    with torch.no_grad():
+        test_loss = 0
+        for _, (src_seqs, tgt_seqs) in enumerate(datasets["test"]):
+            src_seqs, tgt_seqs = (
+                src_seqs.to(device).float(),
+                tgt_seqs.to(device).float(),
+            )
+            outputs = generate_motion(model, src_seqs, output_seq_len)
 
-    # Normalize loss
-    test_loss = test_loss / num_test_sequences
-    print(f"Test loss for {model_path}={test_loss}")
+            # NOTE: It's assumed that the output will be auto-regressive
+            loss = criterion(outputs, tgt_seqs)
+            test_loss += loss.item()
+
+        # Normalize loss
+        test_loss = test_loss / num_test_sequences
+        print("===" * 10, f"\nTest loss for {model_path}={test_loss}")
