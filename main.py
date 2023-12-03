@@ -1,37 +1,26 @@
 from matplotlib import pyplot as plt
 import torch
 
-from utils.args import parse_args
+from utils.args import parse_main_args
 from utils.dataset import prepare_dataset, generate_auto_regressive_targets
 from utils.loss import compute_validation_loss
 from utils.model import get_model
 from utils.types import TargetEnum
 
 
-def main() -> None:
-    """
-    Main runner.
-
-    Args:
-        None
-
-    Returns:
-        None
-    """
-    args = parse_args()
+def main():
+    args = parse_main_args()
 
     # Process train, val, test datasets
     fpath = args.data_path
     batch_size = args.batch_size
-    device = "cpu"  #'cuda' if torch.cuda.is_available() else 'cpu'
+    device = "cpu"  # TODO: 'cuda' if torch.cuda.is_available() else 'cpu'
     datasets = prepare_dataset(fpath, batch_size, device)
 
     # Setup Model
     _, seq_len, raw_dim = next(iter(datasets["train"]))[0].shape
     num_training_sequences = len(datasets["train"]) * batch_size
-
-    # Model Selector
-    model, mask = get_model(args, raw_dim)
+    model, mask = get_model(args, datasets, device)
 
     # Train
     print(f"=== Training model with args={args} ===")
