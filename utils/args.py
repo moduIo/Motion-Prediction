@@ -3,17 +3,8 @@ import argparse
 
 def parse_main_args():
     """
-    Function parses command line args.
-
-    Args:
-        args: The args for the run
-        model: The current model
-        datasets: The datasets for the run
-
-    Returns:
-        A tuple of the model and the mask.
+    Function parses main() command line args.
     """
-    # Process command line arguments
     parser = argparse.ArgumentParser(
         prog="Model Training",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
