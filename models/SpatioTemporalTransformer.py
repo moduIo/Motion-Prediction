@@ -31,7 +31,7 @@ class PositionalEncoding(nn.Module):
         Returns:
             The input sequence mutated to include the positional encodings.
         """
-        src_seqs = src_seqs + self.pe[:, :src_seqs.shape[1], :]
+        src_seqs = src_seqs + self.pe[:, : src_seqs.shape[1], :]
         return self.dropout(src_seqs)
 
 
@@ -44,9 +44,15 @@ class JointEmbedding(nn.Module):
         self.num_joints = num_joints
         self.joint_dim = joint_dim
         self.embedding_dim = embedding_dim
-        self.embeddings = nn.ModuleList([nn.Linear(joint_dim, embedding_dim) for _ in range(num_joints)])
+        self.embeddings = nn.ModuleList(
+            [nn.Linear(joint_dim, embedding_dim) for _ in range(num_joints)]
+        )
         self.positional_embeddings = nn.ModuleList(
-            [PositionalEncoding(embedding_dim, dropout=dropout, max_len=300) for _ in range(num_joints)])
+            [
+                PositionalEncoding(embedding_dim, dropout=dropout, max_len=300)
+                for _ in range(num_joints)
+            ]
+        )
 
     def forward(self, src_seqs):
         """
@@ -68,7 +74,7 @@ class JointEmbedding(nn.Module):
         """
         pos_embeddings = []
         for i in range(self.num_joints):
-            j_i = src_seqs[:, :, i * self.joint_dim:(i+1) * self.joint_dim]
+            j_i = src_seqs[:, :, i * self.joint_dim : (i + 1) * self.joint_dim]
             e_i = self.embeddings[i](j_i)
             p_i = self.positional_embeddings[i](e_i)
             pos_embeddings.append(p_i)
@@ -77,7 +83,15 @@ class JointEmbedding(nn.Module):
 
 
 class SpatioTemporalAttention(nn.Module):
-    def __init__(self, num_joints, seq_len, embedding_dim = 128, ff_dim=256, num_heads=8, dropout=0.1):
+    def __init__(
+        self,
+        num_joints,
+        seq_len,
+        embedding_dim=128,
+        ff_dim=256,
+        num_heads=8,
+        dropout=0.1,
+    ):
         """
         Initializes the ST Attention.
         """
@@ -92,36 +106,72 @@ class SpatioTemporalAttention(nn.Module):
         self.attention_dim = int(self.attention_dim)
         self.feedforward_dim = ff_dim
 
-        #Attention Weights
+        # Attention Weights
         self.temporal_attention_weights = []
         self.spatial_attention_weights = []
 
         # Temporal Attention
-        self.temporal_attention_q = nn.ModuleList([
-            nn.ModuleList([nn.Linear(self.embedding_dim, self.attention_dim, bias=False) for _ in range(num_joints)])
-            for _ in range(num_heads)
-        ])
-        self.temporal_attention_k = nn.ModuleList([
-            nn.ModuleList([nn.Linear(self.embedding_dim, self.attention_dim, bias=False) for _ in range(num_joints)])
-            for _ in range(num_heads)
-        ])
-        self.temporal_attention_v = nn.ModuleList([
-            nn.ModuleList([nn.Linear(self.embedding_dim, self.attention_dim, bias=False) for _ in range(num_joints)])
-            for _ in range(num_heads)
-        ])
+        self.temporal_attention_q = nn.ModuleList(
+            [
+                nn.ModuleList(
+                    [
+                        nn.Linear(self.embedding_dim, self.attention_dim, bias=False)
+                        for _ in range(num_joints)
+                    ]
+                )
+                for _ in range(num_heads)
+            ]
+        )
+        self.temporal_attention_k = nn.ModuleList(
+            [
+                nn.ModuleList(
+                    [
+                        nn.Linear(self.embedding_dim, self.attention_dim, bias=False)
+                        for _ in range(num_joints)
+                    ]
+                )
+                for _ in range(num_heads)
+            ]
+        )
+        self.temporal_attention_v = nn.ModuleList(
+            [
+                nn.ModuleList(
+                    [
+                        nn.Linear(self.embedding_dim, self.attention_dim, bias=False)
+                        for _ in range(num_joints)
+                    ]
+                )
+                for _ in range(num_heads)
+            ]
+        )
         self.temporal_head_projection = nn.Linear(self.input_dim, self.input_dim)
         self.temporal_tau = nn.Softmax(dim=-1)
         self.temporal_norm = nn.BatchNorm1d(self.input_dim)
 
         # Spatial Attention
-        self.spatial_attention_q = nn.ModuleList([
-            nn.ModuleList([nn.Linear(self.embedding_dim, self.attention_dim, bias=False) for _ in range(num_joints)])
-            for _ in range(num_heads)
-        ])
+        self.spatial_attention_q = nn.ModuleList(
+            [
+                nn.ModuleList(
+                    [
+                        nn.Linear(self.embedding_dim, self.attention_dim, bias=False)
+                        for _ in range(num_joints)
+                    ]
+                )
+                for _ in range(num_heads)
+            ]
+        )
         self.spatial_attention_k = nn.ModuleList(
-            [nn.Linear(self.embedding_dim, self.attention_dim, bias=False) for _ in range(num_heads)])
+            [
+                nn.Linear(self.embedding_dim, self.attention_dim, bias=False)
+                for _ in range(num_heads)
+            ]
+        )
         self.spatial_attention_v = nn.ModuleList(
-            [nn.Linear(self.embedding_dim, self.attention_dim, bias=False) for _ in range(num_heads)])
+            [
+                nn.Linear(self.embedding_dim, self.attention_dim, bias=False)
+                for _ in range(num_heads)
+            ]
+        )
         self.spatial_head_projection = nn.Linear(self.input_dim, self.input_dim)
         self.spatial_tau = nn.Softmax(dim=-1)
         self.spatial_norm = nn.BatchNorm1d(self.input_dim)
@@ -131,9 +181,11 @@ class SpatioTemporalAttention(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
         # Feed Forward Layers
-        self.fc = nn.Sequential(nn.Linear(self.input_dim, ff_dim),
-                                nn.ReLU(),                         
-                                nn.Linear(ff_dim, self.input_dim))
+        self.fc = nn.Sequential(
+            nn.Linear(self.input_dim, ff_dim),
+            nn.ReLU(),
+            nn.Linear(ff_dim, self.input_dim),
+        )
         self.fc_norm = torch.nn.BatchNorm1d(self.input_dim)
 
     def _generate_square_subsequent_mask(self, shape):
@@ -172,7 +224,9 @@ class SpatioTemporalAttention(nn.Module):
 
             for i in range(self.num_joints):
                 # Slice sequence to the specific joint
-                j_i = src_seqs[:, :, i * self.embedding_dim:(i+1) * self.embedding_dim]
+                j_i = src_seqs[
+                    :, :, i * self.embedding_dim : (i + 1) * self.embedding_dim
+                ]
 
                 # Setup Projections
                 q_i = self.temporal_attention_q[h][i](j_i)
@@ -211,7 +265,9 @@ class SpatioTemporalAttention(nn.Module):
             for i in range(self.seq_len):
                 # Slice sequence to the embedding at each timestep
                 #   and reshape to (batch_size, num_joints, embedding_dimension)
-                e_i = torch.reshape(src_seqs[:, i, :], (batch_size, -1, self.embedding_dim))
+                e_i = torch.reshape(
+                    src_seqs[:, i, :], (batch_size, -1, self.embedding_dim)
+                )
 
                 # Setup Projections
                 q_is = []
@@ -236,7 +292,7 @@ class SpatioTemporalAttention(nn.Module):
         spatial_attention = torch.cat(spatial_attentions, dim=-1)
         spatial_attention = self.spatial_head_projection(spatial_attention)
         return spatial_attention
-    
+
     def get_temporal_attention_weights(self):
         return self.temporal_attention_weights
 
@@ -257,12 +313,16 @@ class SpatioTemporalAttention(nn.Module):
         # 1. Compute Temporal Attention
         temporal_attention = self._temporal_attention(src_seqs)
         temporal_attention = self.dropout(temporal_attention) + src_seqs
-        temporal_attention = self.temporal_norm(temporal_attention.permute(0, 2, 1)).permute(0, 2, 1)
+        temporal_attention = self.temporal_norm(
+            temporal_attention.permute(0, 2, 1)
+        ).permute(0, 2, 1)
 
         # 2. Compute Spatial Attention
         spatial_attention = self._spatial_attention(src_seqs)
         spatial_attention = self.dropout(spatial_attention) + src_seqs
-        spatial_attention = self.spatial_norm(spatial_attention.permute(0, 2, 1)).permute(0, 2, 1)
+        spatial_attention = self.spatial_norm(
+            spatial_attention.permute(0, 2, 1)
+        ).permute(0, 2, 1)
 
         # 3. Compute Spatio-temporal Attention
         attention = temporal_attention + spatial_attention
@@ -273,8 +333,18 @@ class SpatioTemporalAttention(nn.Module):
 
 
 class SpatioTemporalTransformer(nn.Module):
-
-    def __init__(self, num_joints, joint_dim, seq_len, input_dim, embedding_dim = 128, ff_dim=256, embedding_dropout = 0.1, num_heads = 8, attention_layers=8):
+    def __init__(
+        self,
+        num_joints,
+        joint_dim,
+        seq_len,
+        input_dim,
+        embedding_dim=128,
+        ff_dim=256,
+        embedding_dropout=0.1,
+        num_heads=8,
+        attention_layers=8,
+    ):
         """
         Initializes the ST Transformer.
         """
@@ -292,9 +362,22 @@ class SpatioTemporalTransformer(nn.Module):
         self.spatial_attention_weights_all_layers = []
 
         # Define Modules
-        self.joint_embeddings = JointEmbedding(num_joints, joint_dim, embedding_dim, embedding_dropout)
+        self.joint_embeddings = JointEmbedding(
+            num_joints, joint_dim, embedding_dim, embedding_dropout
+        )
         self.spatio_temporal_attention = nn.ModuleList(
-            [SpatioTemporalAttention(num_joints, seq_len, embedding_dim, ff_dim, num_heads, embedding_dropout) for _ in range(attention_layers)])
+            [
+                SpatioTemporalAttention(
+                    num_joints,
+                    seq_len,
+                    embedding_dim,
+                    ff_dim,
+                    num_heads,
+                    embedding_dropout,
+                )
+                for _ in range(attention_layers)
+            ]
+        )
         self.output = nn.Linear(num_joints * embedding_dim, num_joints * joint_dim)
 
     def forward(self, src_seqs):
@@ -320,8 +403,12 @@ class SpatioTemporalTransformer(nn.Module):
             attention_seqs = self.spatio_temporal_attention[i](attention_seqs)
 
             if i == 0:
-                self.temporal_attention_weights_all_layers.append(self.spatio_temporal_attention[i].get_temporal_attention_weights())
-                self.spatial_attention_weights_all_layers.append(self.spatio_temporal_attention[i].get_spatial_attention_weights())
+                self.temporal_attention_weights_all_layers.append(
+                    self.spatio_temporal_attention[i].get_temporal_attention_weights()
+                )
+                self.spatial_attention_weights_all_layers.append(
+                    self.spatio_temporal_attention[i].get_spatial_attention_weights()
+                )
 
         output_seqs = self.output(attention_seqs)
 

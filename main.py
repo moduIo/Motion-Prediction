@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 from utils.mask_generator import BatchJointMaskGenerator
 import argparse
 
+
 def main() -> None:
     """
     Main runner.
@@ -20,74 +21,99 @@ def main() -> None:
     """
 
     # Process command line arguments
-    parser = argparse.ArgumentParser(prog="Model Training",
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-                                     description="Train selected model with given parameters on chosen dataset.")
-    
+    parser = argparse.ArgumentParser(
+        prog="Model Training",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        description="Train selected model with given parameters on chosen dataset.",
+    )
+
     model_info = parser.add_argument_group("Model Information")
-    model_info.add_argument("--model",choices =["spatio-temporal-transformer","rnn","rnn_a","lstm","lstm_a","seq2seq","bi-directional-transformer"],default="STT")
-    model_info.add_argument("-tt","--target_type",choices=["default","auto-regressive","pretrain"],default="default")
-    model_info.add_argument("-dp","--data_path",default="./data/sampled/aa/")
-    model_info.add_argument("-sfreq","--save_model_frequency",default=5, type=int)
-    model_info.add_argument("-spath","--save_model_path",default="./model_saves/")
+    model_info.add_argument(
+        "--model",
+        choices=[
+            "spatio-temporal-transformer",
+            "rnn",
+            "rnn_a",
+            "lstm",
+            "lstm_a",
+            "seq2seq",
+            "bi-directional-transformer",
+        ],
+        default="STT",
+    )
+    model_info.add_argument(
+        "-tt",
+        "--target_type",
+        choices=["default", "auto-regressive", "pretrain"],
+        default="default",
+    )
+    model_info.add_argument("-dp", "--data_path", default="./data/sampled/aa/")
+    model_info.add_argument("-sfreq", "--save_model_frequency", default=5, type=int)
+    model_info.add_argument("-spath", "--save_model_path", default="./model_saves/")
 
     parameters = parser.add_argument_group("Model Parameters")
-    parameters.add_argument("-b","--batch_size",default=32, type=int)
-    parameters.add_argument("-emb","--embedding_dim",default=128, type=int)
-    parameters.add_argument("-ep","--epochs",default=100, type=int)
-    parameters.add_argument("-nh","--nhead",default=8, type=int)
-    parameters.add_argument("-enc","--nlayers",default=8, type=int)
-    parameters.add_argument("-ff","--feedforward_dim",default=256, type=int)
-    parameters.add_argument("-do","--dropout",default=0.1, type=float)
+    parameters.add_argument("-b", "--batch_size", default=32, type=int)
+    parameters.add_argument("-emb", "--embedding_dim", default=128, type=int)
+    parameters.add_argument("-ep", "--epochs", default=100, type=int)
+    parameters.add_argument("-nh", "--nhead", default=8, type=int)
+    parameters.add_argument("-enc", "--nlayers", default=8, type=int)
+    parameters.add_argument("-ff", "--feedforward_dim", default=256, type=int)
+    parameters.add_argument("-do", "--dropout", default=0.1, type=float)
 
     args = parser.parse_args()
 
     # Process train, val, test datasets
     fpath = args.data_path
     batch_size = args.batch_size
-    device = 'cpu' #'cuda' if torch.cuda.is_available() else 'cpu'
+    device = "cpu"  #'cuda' if torch.cuda.is_available() else 'cpu'
     datasets = prepare_dataset(fpath, batch_size, device)
 
     # Setup Model
     _, seq_len, raw_dim = next(iter(datasets["train"]))[0].shape
-    
-    #Hyperparameters
+
+    # Hyperparameters
     embedding_dim = args.embedding_dim  # Size of embeddings
     num_joints = 24  # AMASS DIP has 24 joints
-    joint_dim = raw_dim // num_joints # 3 for -aa and 9 for -rotmat
+    joint_dim = raw_dim // num_joints  # 3 for -aa and 9 for -rotmat
     epochs = args.epochs
     dropout = args.dropout
     nlayers = args.nlayers
     ff_dim = args.feedforward_dim
     nhead = args.nhead
-    
+
     num_training_sequences = len(datasets["train"]) * batch_size
-    
-    #Model Selector
+
+    # Model Selector
     if args.model == ModelEnum.SPATIO_TEMPORAL_TRANSFORMER.value:
-        model = SpatioTemporalTransformer(num_joints,
-                                          joint_dim,
-                                          seq_len,
-                                          raw_dim,
-                                          embedding_dim,
-                                          ff_dim,
-                                          dropout,
-                                          nhead,
-                                          nlayers)
+        model = SpatioTemporalTransformer(
+            num_joints,
+            joint_dim,
+            seq_len,
+            raw_dim,
+            embedding_dim,
+            ff_dim,
+            dropout,
+            nhead,
+            nlayers,
+        )
     elif args.model == ModelEnum.BIDIRECTIONAL_TRANSFORMER.value:
-        model = BiDirectionalTransformer(num_joints,
-                                         joint_dim,
-                                         raw_dim,
-                                         embedding_dim,
-                                         nhead=nhead,
-                                         num_encoder_layers=nlayers,
-                                         dim_feedforward=ff_dim,
-                                         dropout=dropout).to(device)
-        mask = BatchJointMaskGenerator(num_joints,
-                                       joint_dim,
-                                       mask_value=-2,
-                                       time_step_mask_prob=1.0,
-                                       joint_mask_prob=1/24)
+        model = BiDirectionalTransformer(
+            num_joints,
+            joint_dim,
+            raw_dim,
+            embedding_dim,
+            nhead=nhead,
+            num_encoder_layers=nlayers,
+            dim_feedforward=ff_dim,
+            dropout=dropout,
+        ).to(device)
+        mask = BatchJointMaskGenerator(
+            num_joints,
+            joint_dim,
+            mask_value=-2,
+            time_step_mask_prob=1.0,
+            joint_mask_prob=1 / 24,
+        )
     elif args.model == "RNN":
         pass
     elif args.model == "RNN_a":
@@ -106,7 +132,7 @@ def main() -> None:
     print("Training model...")
     torch.autograd.set_detect_anomaly(True)
     opt = torch.optim.SGD(model.parameters(), lr=1e-8, momentum=0.9)
-    criterion = torch.nn.MSELoss(reduction='sum')
+    criterion = torch.nn.MSELoss(reduction="sum")
 
     training_losses = []
     validation_losses = []
@@ -114,9 +140,12 @@ def main() -> None:
         epoch_loss = 0
         for _, (src_seqs, tgt_seqs) in enumerate(datasets["train"]):
             opt.zero_grad()
-            
-            src_seqs, tgt_seqs = src_seqs.to(device).float(), tgt_seqs.to(device).float()
-            
+
+            src_seqs, tgt_seqs = (
+                src_seqs.to(device).float(),
+                tgt_seqs.to(device).float(),
+            )
+
             if args.target_type == TargetEnum.PRE_TRAIN.value:
                 src_mask = mask.mask_joints(src_seqs)
                 outputs = model(src_mask)
@@ -124,7 +153,9 @@ def main() -> None:
                 outputs = model(src_seqs)
 
             if args.target_type == TargetEnum.AUTO_REGRESSIVE.value:
-                loss = criterion(outputs, generate_auto_regressive_targets(src_seqs, tgt_seqs))
+                loss = criterion(
+                    outputs, generate_auto_regressive_targets(src_seqs, tgt_seqs)
+                )
             elif args.target_type == TargetEnum.PRE_TRAIN.value:
                 loss = criterion(outputs, src_seqs)
             else:
@@ -145,7 +176,7 @@ def main() -> None:
 
                 src_seqs, tgt_seqs = (
                     src_seqs.to(device).float(),
-                    tgt_seqs.to(device).float()
+                    tgt_seqs.to(device).float(),
                 )
 
                 if args.target_type == TargetEnum.PRE_TRAIN.value:
@@ -155,7 +186,9 @@ def main() -> None:
                     outputs = model(src_seqs)
 
                 if args.target_type == TargetEnum.AUTO_REGRESSIVE.value:
-                    loss = criterion(outputs, generate_auto_regressive_targets(src_seqs, tgt_seqs))
+                    loss = criterion(
+                        outputs, generate_auto_regressive_targets(src_seqs, tgt_seqs)
+                    )
                 elif args.target_type == TargetEnum.PRE_TRAIN.value:
                     loss = criterion(outputs, src_seqs)
                 else:
@@ -168,16 +201,14 @@ def main() -> None:
         print(f"Validation loss {epoch_val_loss} | ")
 
         if epoch % args.save_model_frequency == 0:
-                        
+
             arguments = vars(args)
-            with open(f"{args.save_model_path}/model_config.txt",'w') as f:
-                for k,v in arguments.items():
+            with open(f"{args.save_model_path}/model_config.txt", "w") as f:
+                for k, v in arguments.items():
                     line = str(k) + ": " + str(v)
                     f.write(line)
 
-            torch.save(
-                model.state_dict(), f"{args.save_model_path}/{epoch}.model"
-            )
+            torch.save(model.state_dict(), f"{args.save_model_path}/{epoch}.model")
         if len(validation_losses) == 0 or epoch_val_loss <= min(validation_losses):
             torch.save(
                 model.state_dict(), f"{args.save_model_path}/best_epoch_{epoch}.model"
@@ -191,6 +222,7 @@ def main() -> None:
     plt.xlabel("Epoch")
     plt.savefig(f"{args.save_model_path}/loss.svg", format="svg")
     plt.savefig(f"{args.save_model_path}/loss.png", format="png")
+
 
 if __name__ == "__main__":
     main()
