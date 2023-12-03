@@ -30,11 +30,8 @@ def parse_train_args(args):
         "--model",
         choices=[
             "spatio-temporal-transformer",
-            "rnn",
-            "rnn_a",
-            "lstm",
-            "lstm_a",
-            "seq2seq",
+            "lstm_seq2seq",
+            "lstm_seq2seq_att",
             "bi-directional-transformer",
         ],
         default="spatio-temporal-transformer",
@@ -43,7 +40,7 @@ def parse_train_args(args):
         "-tt",
         "--target_type",
         choices=["default", "auto-regressive", "pre-train"],
-        default="default",
+        default="auto-regressive",
     )
     model_info.add_argument("-dp", "--data_path", default="./data/sampled/aa/")
     model_info.add_argument("-sfreq", "--save_model_frequency", default=5, type=int)
@@ -59,6 +56,7 @@ def parse_train_args(args):
     parameters.add_argument("-do", "--dropout", default=0.1, type=float)
     parameters.add_argument("-mp1", "--seqmaskprob", default=1.0, type=float)
     parameters.add_argument("-mp2", "--jointmaskprob", default=0.05, type=float)
+    parameters.add_argument("-hid", "--hidden_dim", default=64, type=int)
 
     return parser.parse_known_args(args)
 

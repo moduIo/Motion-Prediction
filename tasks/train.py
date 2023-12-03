@@ -1,10 +1,11 @@
 import torch
+import os
 
 from utils.dataset import prepare_dataset, generate_auto_regressive_targets
 from utils.loss import compute_validation_loss, PerJointMSELoss
 from utils.metrics import plot_training_metrics
 from utils.model import get_model
-from utils.types import TargetEnum
+from utils.types import TargetEnum,ModelEnum
 
 
 def train(args):
@@ -31,6 +32,7 @@ def train(args):
 
     training_losses = []
     validation_losses = []
+    os.makedirs(args.save_model_path,exist_ok=True)
     for epoch in range(args.epochs):
         print(f"Start Epoch {epoch}:")
         model.train()
@@ -43,11 +45,14 @@ def train(args):
                 tgt_seqs.to(device).float(),
             )
 
-            if args.target_type == TargetEnum.PRE_TRAIN.value:
-                src_mask = mask.mask_joints(src_seqs)
-                outputs = model(src_mask)
+            if (args.model == ModelEnum.LSTM_SEQ2SEQ.value) or (args.model == ModelEnum.LSTM_SEQ2SEQ_ATT.value):
+                outputs = model(src_seqs,tgt_seqs)
             else:
-                outputs = model(src_seqs)
+                if args.target_type == TargetEnum.PRE_TRAIN.value:
+                    src_mask = mask.mask_joints(src_seqs)
+                    outputs = model(src_mask)
+                else:
+                    outputs = model(src_seqs)
 
             if args.target_type == TargetEnum.AUTO_REGRESSIVE.value:
                 loss = criterion(
@@ -75,7 +80,7 @@ def train(args):
             arguments = vars(args)
             with open(f"{args.save_model_path}/model_config.txt", "w+") as f:
                 for k, v in arguments.items():
-                    line = str(k) + ": " + str(v)
+                    line = str(k) + ": " + str(v) + "\n"
                     f.write(line)
 
             torch.save(model.state_dict(), f"{args.save_model_path}/{epoch}.model")
