@@ -12,6 +12,8 @@ def parse_main_args():
     )
 
     model_info = parser.add_argument_group("Model Information")
+    model_info.add_argument("--mode", choices=["train", "predict"], default="train")
+
     model_info.add_argument(
         "--model",
         choices=[
