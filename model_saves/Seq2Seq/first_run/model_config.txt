@@ -1,0 +1,13 @@
+model: lstm_seq2seq
+target_type: default
+data_path: ./data/sampled/aa/
+save_model_frequency: 5
+save_model_path: ./model_saves/Seq2Seq/first_run/
+batch_size: 32
+embedding_dim: 128
+epochs: 10
+nhead: 8
+nlayers: 1
+feedforward_dim: 256
+dropout: 0.1
+hidden_dim: 128

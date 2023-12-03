@@ -18,9 +18,8 @@ def parse_main_args():
             "spatio-temporal-transformer",
             "rnn",
             "rnn_a",
-            "lstm",
+            "lstm_seq2seq",
             "lstm_a",
-            "seq2seq",
             "bi-directional-transformer",
         ],
         default="spatio-temporal-transformer",
@@ -43,5 +42,6 @@ def parse_main_args():
     parameters.add_argument("-enc", "--nlayers", default=8, type=int)
     parameters.add_argument("-ff", "--feedforward_dim", default=256, type=int)
     parameters.add_argument("-do", "--dropout", default=0.1, type=float)
+    parameters.add_argument("-hid", "--hidden_dim", default=64, type=int)
 
     return parser.parse_args()

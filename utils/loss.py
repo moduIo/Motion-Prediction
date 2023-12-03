@@ -1,7 +1,7 @@
 import torch
 
 from utils.dataset import generate_auto_regressive_targets
-from utils.types import TargetEnum
+from utils.types import TargetEnum,ModelEnum
 
 
 def compute_validation_loss(args, model, datasets, criterion, device, mask):
@@ -28,11 +28,14 @@ def compute_validation_loss(args, model, datasets, criterion, device, mask):
                 tgt_seqs.to(device).float(),
             )
 
-            if args.target_type == TargetEnum.PRE_TRAIN.value:
-                src_mask = mask.mask_joints(src_seqs)
-                outputs = model(src_mask)
+            if args.model == ModelEnum.LSTM_SEQ2SEQ.value:
+                outputs = model(src_seqs,tgt_seqs)
             else:
-                outputs = model(src_seqs)
+                if args.target_type == TargetEnum.PRE_TRAIN.value:
+                    src_mask = mask.mask_joints(src_seqs)
+                    outputs = model(src_mask)
+                else:
+                    outputs = model(src_seqs)
 
             if args.target_type == TargetEnum.AUTO_REGRESSIVE.value:
                 loss = criterion(

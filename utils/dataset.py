@@ -2,7 +2,7 @@ import os
 
 import torch
 
-from fairmotion.tasks.motion_prediction import utils
+from fairmotion.fairmotion.tasks.motion_prediction import utils
 
 
 def prepare_dataset(fpath, batch_size, device):

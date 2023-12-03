@@ -1,0 +1,13 @@
+model: spatio-temporal-transformer
+target_type: auto-regressive
+data_path: ./data/sampled/aa/
+save_model_frequency: 5
+save_model_path: ./model_saves/STT/first_run/
+batch_size: 32
+embedding_dim: 32
+epochs: 1
+nhead: 1
+nlayers: 1
+feedforward_dim: 256
+dropout: 0.1
+hidden_dim: 64
