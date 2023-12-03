@@ -47,6 +47,7 @@ def compute_validation_loss(args, model, datasets, criterion, device, mask):
         A tuple of the loss and the batch_size
     """
     epoch_val_loss = 0
+    model.eval()
     with torch.no_grad():
         for batch_size, (src_seqs, tgt_seqs) in enumerate(datasets["validation"]):
 
@@ -73,5 +74,4 @@ def compute_validation_loss(args, model, datasets, criterion, device, mask):
             epoch_val_loss += loss.item()
 
     batch_size += 1
-
     return epoch_val_loss, batch_size
