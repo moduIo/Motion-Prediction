@@ -74,5 +74,4 @@ def compute_validation_loss(args, model, datasets, criterion, device, mask):
             epoch_val_loss += loss.item()
 
     batch_size += 1
-    model.train()
     return epoch_val_loss, batch_size
