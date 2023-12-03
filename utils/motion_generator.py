@@ -18,7 +18,7 @@ def generate_motion(model, src_seq, seq_len):
 
     output_seqs = []
     output_seq = src_seq
-    for i in range(seq_len):
+    for _ in range(seq_len):
         output_seq = model(output_seq)
         output_seqs.append(output_seq[:, -1, :].unsqueeze(1))
 
