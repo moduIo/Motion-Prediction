@@ -2,7 +2,9 @@ import os
 
 import torch
 
-from fairmotion.fairmotion.tasks.motion_prediction import utils
+sys.path.append(os.path.join(os.getcwd(), 'fairmotion'))
+from fairmotion.tasks.motion_prediction import utils
+sys.path.remove(os.path.join(os.getcwd(), 'fairmotion'))
 
 
 def prepare_dataset(fpath, batch_size, device):
