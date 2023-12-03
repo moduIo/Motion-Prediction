@@ -1,7 +1,34 @@
 import torch
+import torch.nn as nn
 
 from utils.dataset import generate_auto_regressive_targets
 from utils.types import TargetEnum
+
+class PerJointMSELoss(nn.Module):
+    def __init__(self, number_joints, joint_dimension):
+        super(PerJointMSELoss, self).__init__()
+        self.mse_loss = nn.MSELoss(reduction="sum")
+        self.number_joints = number_joints
+        self.joint_dimension = joint_dimension
+
+    def forward(self, pred, target):
+        # Reshape [batch size, seq length, feature dimension] to [batch size, seq length, number joints, joint dimension]
+        pred = pred.reshape(pred.size(0), pred.size(1), self.number_joints, self.joint_dimension)
+        target = target.reshape(target.size(0), target.size(1), self.number_joints, self.joint_dimension)
+
+        # Initialize total loss
+        total_loss = 0.0
+
+        # Compute MSE loss for each joint and sum them up
+        for j in range(self.number_joints):
+            joint_pred = pred[:, :, j, :]
+            joint_target = target[:, :, j, :]
+            total_loss += self.mse_loss(joint_pred, joint_target)
+
+        # Average the loss over all joints
+        average_loss = total_loss / self.number_joints
+
+        return average_loss
 
 
 def compute_validation_loss(args, model, datasets, criterion, device, mask):
@@ -17,12 +44,12 @@ def compute_validation_loss(args, model, datasets, criterion, device, mask):
         mask: The mask for masked objective (optional)
 
     Returns:
-        A tuple of the loss and the val_iter
+        A tuple of the loss and the batch_size
     """
     epoch_val_loss = 0
     model.eval()
     with torch.no_grad():
-        for val_iter, (src_seqs, tgt_seqs) in enumerate(datasets["validation"]):
+        for batch_size, (src_seqs, tgt_seqs) in enumerate(datasets["validation"]):
 
             src_seqs, tgt_seqs = (
                 src_seqs.to(device).float(),
@@ -45,7 +72,6 @@ def compute_validation_loss(args, model, datasets, criterion, device, mask):
                 loss = criterion(outputs, tgt_seqs)
 
             epoch_val_loss += loss.item()
-            break  # TODO: Delete this
 
-    model.train()
-    return epoch_val_loss, val_iter
+    batch_size += 1
+    return epoch_val_loss, batch_size
