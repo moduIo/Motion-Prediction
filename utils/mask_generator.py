@@ -1,7 +1,15 @@
 import torch
 
+
 class BatchJointMaskGenerator:
-    def __init__(self, num_joints, joint_dim, mask_value=-2, time_step_mask_prob=1.0, joint_mask_prob=1/24):
+    def __init__(
+        self,
+        num_joints,
+        joint_dim,
+        mask_value=-2,
+        time_step_mask_prob=1.0,
+        joint_mask_prob=1 / 24,
+    ):
         """
         Args:
             num_joints: 15 or 24 for AMASS depending on how dataset is processed
