@@ -24,7 +24,7 @@ def train(args):
     model, mask = get_model(args, datasets, device)
 
     # Train
-    print(f"=== Training model with args={args} ===")
+    print(f"=== Training model with args={args} on {device} ===")
     torch.autograd.set_detect_anomaly(True)
     opt = torch.optim.SGD(model.parameters(), lr=1e-8, momentum=0.9)
     criterion = PerJointMSELoss(number_joints=num_joints,joint_dimension=joint_dim)
