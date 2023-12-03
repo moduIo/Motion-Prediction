@@ -36,7 +36,7 @@ $ pip install -e fairmotion
 ## 3. Training Example
 After preprocessing, we have data in a format similar to that given in the sampled example data `data/sampled` directory.
 ```
-(motion-prediction) MacBook-Air:fairmotion tim$ python main.py
+(motion_prediction) MacBook-Air:Motion-Prediction tim$ clear; python main.py --target_type=auto-regressive --epochs=1 -nh=2 -enc=2 -sfreq=0 -spath="../model_saves/sampled/" --mode=train
 ```
 
 ### Output:
@@ -48,3 +48,13 @@ src_seqs.shape=torch.Size([64, 120, 72])
 Training loss 235.84820556640625 | 
 ```
 
+## 4. Prediction Example
+```commandline
+(motion_prediction) MacBook-Air:Motion-Prediction tim$ clear; python main.py --target_type=auto-regressive --epochs=1 -nh=2 -enc=2 -sfreq=0 -spath="../model_saves/sampled/0.model" --mode=predict
+```
+=>
+```commandline
+=== Computing test error with args=Namespace(batch_size=32, data_path='./data/sampled/aa/', dropout=0.1, embedding_dim=128, epochs=1, feedforward_dim=256, mode='predict', model='spatio-temporal-transformer', nhead=2, nlayers=2, save_model_frequency=0, save_model_path='../model_saves/sampled/0.model', target_type='auto-regressive') ===
+        Generating sequence of length: 24
+Test loss for ../model_saves/sampled/0.model=1379.90478515625
+```

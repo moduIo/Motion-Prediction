@@ -1,17 +1,14 @@
-from utils.args import parse_main_args
+from utils.args import parse_train_args, parse_predict_args, parse_mode_arg
 from tasks.train import train
 from tasks.predict import predict
 
 
 def main():
-    args = parse_main_args()
-
-    if args.mode == 'train':
-        train(args)
-    elif args.mode == 'predict':
-        predict(args)
+    mode_arg, args = parse_mode_arg()
+    if mode_arg.mode == 'train':
+        train(parse_train_args(args)[0])
     else:
-        print("Incorrect program usage: invalid args.mode value.")
+        predict(parse_predict_args(args)[0])
 
 
 if __name__ == "__main__":

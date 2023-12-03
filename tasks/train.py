@@ -33,6 +33,7 @@ def train(args):
     validation_losses = []
     for epoch in range(args.epochs):
         print(f"Start Epoch {epoch}:")
+        model.train()
         epoch_loss = 0
         for _, (src_seqs, tgt_seqs) in enumerate(datasets["train"]):
             opt.zero_grad()
