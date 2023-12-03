@@ -109,4 +109,3 @@ def parse_predict_args(args):
     parameters.add_argument("-mp2", "--jointmaskprob", default=0.05, type=float)
 
     return parser.parse_known_args(args)
-

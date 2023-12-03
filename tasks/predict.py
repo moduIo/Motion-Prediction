@@ -1,6 +1,7 @@
 import torch
 
 from utils.dataset import prepare_dataset
+from utils.loss import PerJointMSELoss
 from utils.model import get_model
 from utils.motion_generator import generate_motion
 
@@ -13,6 +14,8 @@ def predict(args):
     datasets = prepare_dataset(fpath, batch_size, device)
     num_test_sequences = len(datasets["test"]) * batch_size
     _, output_seq_len, raw_dim = next(iter(datasets["test"]))[1].shape
+    num_joints = 24
+    joint_dim = raw_dim // num_joints
 
     # Setup model
     model_path = args.save_model_path
@@ -22,7 +25,7 @@ def predict(args):
 
     # Predict
     print(f"=== Computing test error with args={args} ===")
-    criterion = torch.nn.MSELoss(reduction="sum")
+    criterion = PerJointMSELoss(number_joints=num_joints, joint_dimension=joint_dim)
 
     with torch.no_grad():
         test_loss = 0
