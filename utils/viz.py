@@ -137,7 +137,8 @@ class Visualizer:
         offsets = self.smpl_offsets
 
         if self.type == "aa":
-            joint_angles = self.aa2rotmat(joint_angles)
+            frames, _ = joint_angles.shape
+            joint_angles = self.aa2rotmat(joint_angles.reshape([-1,self.SMPL_NR_JOINTS,3])).reshape(frames,-1)
 
         assert joint_angles.shape[-1] == self.SMPL_NR_JOINTS * 9
         angles = np.reshape(joint_angles, [-1, self.SMPL_NR_JOINTS, 3, 3])
