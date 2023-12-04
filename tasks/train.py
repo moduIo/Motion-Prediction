@@ -48,7 +48,8 @@ def train(args):
             if (args.model == ModelEnum.LSTM_SEQ2SEQ.value) or (
                 args.model == ModelEnum.LSTM_SEQ2SEQ_ATT.value
             ):
-                outputs = model(src_seqs, tgt_seqs)
+                ar_tgt =  generate_auto_regressive_targets(src_seqs, tgt_seqs)
+                outputs = model(src_seqs, ar_tgt)
             else:
                 if args.target_type == TargetEnum.PRE_TRAIN.value:
                     src_mask = mask.mask_joints(src_seqs)
@@ -77,7 +78,7 @@ def train(args):
         )
         validation_losses.append(epoch_val_loss / val_batch_size)
         print(f"Training loss {epoch_loss} | ")
-        print(f"Validation loss {epoch_val_loss} | ")
+        print(f"Validation loss {epoch_val_loss/val_batch_size} | ")
 
         # Save model
         if epoch % args.save_model_frequency == 0:

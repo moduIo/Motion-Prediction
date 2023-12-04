@@ -64,7 +64,8 @@ def compute_validation_loss(args, model, datasets, criterion, device, mask):
             if (args.model == ModelEnum.LSTM_SEQ2SEQ.value) or (
                 args.model == ModelEnum.LSTM_SEQ2SEQ_ATT.value
             ):
-                outputs = model(src_seqs, tgt_seqs)
+                ar_tgt =  generate_auto_regressive_targets(src_seqs, tgt_seqs)
+                outputs = model(src_seqs, ar_tgt)
             else:
                 if args.target_type == TargetEnum.PRE_TRAIN.value:
                     src_mask = mask.mask_joints(src_seqs)

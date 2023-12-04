@@ -7,9 +7,9 @@ import random
 
 
 class DecoderStep(nn.Module):
-    def __init__(self, input_dim, output_dim, hidden_dim, device):
+    def __init__(self, input_dim, output_dim, num_layers, hidden_dim, device):
         super(DecoderStep, self).__init__()
-        self.lstm = (nn.LSTM(input_size=input_dim, hidden_size=hidden_dim)).to(device)
+        self.lstm = (nn.LSTM(input_size=input_dim, hidden_size=hidden_dim,num_layers=num_layers)).to(device)
         self.out = nn.Linear(hidden_dim, output_dim)
 
     def forward(self, input, hidden=None, cell=None, encoder_outputs=None):
@@ -33,12 +33,14 @@ class LSTMDecoder(nn.Module):
         device: Optional; Device to be used "cuda" or "cpu"
     """
 
-    def __init__(self, input_dim, output_dim, hidden_dim, device):
+    def __init__(self, input_dim, output_dim, hidden_dim, device, num_layers=1):
         super(LSTMDecoder, self).__init__()
         self.input_dim = input_dim
+
         self.decoder_step = DecoderStep(
             input_dim=input_dim,
             output_dim=output_dim,
+            num_layers = num_layers,
             hidden_dim=hidden_dim,
             device=device,
         )
@@ -92,6 +94,7 @@ class DecoderStepWithAttention(nn.Module):
         self.output_dim = output_dim
         self.source_length = source_length
         self.device = device
+        # self.num_layers = num_layers
 
         self.attn = nn.Linear(
             self.hidden_dim + self.input_dim,
