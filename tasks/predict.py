@@ -10,7 +10,7 @@ def predict(args):
     # Setup dataset
     fpath = args.data_path
     batch_size = args.batch_size
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     datasets = prepare_dataset(fpath, batch_size, device)
     num_test_sequences = len(datasets["test"]) * batch_size
     _, output_seq_len, raw_dim = next(iter(datasets["test"]))[1].shape
