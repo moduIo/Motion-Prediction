@@ -6,6 +6,7 @@ from utils.loss import compute_validation_loss, PerJointMSELoss
 from utils.metrics import plot_training_metrics
 from utils.model import get_model
 from utils.types import TargetEnum, ModelEnum
+from tqdm import tqdm
 
 
 def train(args):
@@ -37,7 +38,11 @@ def train(args):
         print(f"Start Epoch {epoch}:")
         model.train()
         epoch_loss = 0
-        for _, (src_seqs, tgt_seqs) in enumerate(datasets["train"]):
+
+        # Wrapping the training dataset with tqdm for the progress bar
+        train_loader = tqdm(datasets["train"], desc=f"Epoch {epoch}", leave=False)
+
+        for _, (src_seqs, tgt_seqs) in enumerate(train_loader):
             opt.zero_grad()
 
             src_seqs, tgt_seqs = (
@@ -69,6 +74,9 @@ def train(args):
             loss.backward()
             opt.step()
             epoch_loss += loss.item()
+
+            # Update the progress bar with the current loss
+            train_loader.set_postfix(loss=loss.item())
 
         # Compute epoch losses
         epoch_loss = epoch_loss / batch_size

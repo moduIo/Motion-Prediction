@@ -9,6 +9,7 @@ class BiDirectionalTransformer(nn.Module):
         num_joints,
         joint_dim,
         input_dim,
+        device,
         embedding_dim=32,
         nhead=12,
         num_encoder_layers=6,
@@ -30,7 +31,7 @@ class BiDirectionalTransformer(nn.Module):
 
         # Define Modules
         self.joint_embedder = JointEmbedding(
-            self.num_joints, self.joint_dim, self.embedding_dim, self.dropout
+            self.num_joints, self.joint_dim, self.embedding_dim, self.dropout, device
         )
         self.encoder_layer = nn.TransformerEncoderLayer(
             d_model=self.embedding_dim * self.num_joints,
