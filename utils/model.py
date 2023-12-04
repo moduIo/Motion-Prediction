@@ -49,6 +49,7 @@ def get_model(args, datasets, device):
             num_joints,
             joint_dim,
             raw_dim,
+            device,
             embedding_dim,
             nhead=nhead,
             num_encoder_layers=nlayers,
