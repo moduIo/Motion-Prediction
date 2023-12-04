@@ -1,7 +1,7 @@
 import torch
 
 
-def generate_motion(model, src_seq, seq_len, args, save):
+def generate_motion(model, src_seq, seq_len, save_path, save):
     """
     Function generates motion from a src_sequence of length seq_len.
 
@@ -9,7 +9,7 @@ def generate_motion(model, src_seq, seq_len, args, save):
         model: A trained auto-regressive model
         src_seq: An input motion sequence
         seq_len: The length of the generated sequence
-        args: The predictions args
+        save_path: The path to save the sequence to
         save: True if the motion sequence should be saved or not
 
     Returns:
@@ -28,5 +28,5 @@ def generate_motion(model, src_seq, seq_len, args, save):
     output_seq = torch.cat(output_seqs, dim=1)
 
     if save:
-        torch.save(output_seq, f"{args.save_preds_path}.pt")
+        torch.save(output_seq, save_path)
     return output_seq
