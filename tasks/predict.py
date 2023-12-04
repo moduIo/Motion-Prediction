@@ -29,14 +29,14 @@ def predict(args):
 
     with torch.no_grad():
         test_loss = 0
-        for _, (src_seqs, tgt_seqs) in enumerate(datasets["test"]):
+        for i, (src_seqs, tgt_seqs) in enumerate(datasets["test"]):
             src_seqs, tgt_seqs = (
                 src_seqs.to(device).float(),
                 tgt_seqs.to(device).float(),
             )
-            outputs = generate_motion(model, src_seqs, output_seq_len)
-
-            # NOTE: It's assumed that the output will be auto-regressive
+            save_path = f"{args.save_preds_path}_{i}.pt"
+            # NOTE: It's assumed that the output will be generated in an auto-regressive manner
+            outputs = generate_motion(model, src_seqs, output_seq_len, save_path, save=True)
             loss = criterion(outputs, tgt_seqs)
             test_loss += loss.item()
 
