@@ -36,7 +36,7 @@ class PositionalEncoding(nn.Module):
 
 
 class JointEmbedding(nn.Module):
-    def __init__(self, num_joints, joint_dim, embedding_dim, dropout):
+    def __init__(self, num_joints, joint_dim, embedding_dim, dropout, device):
         """
         Initializes a linear embedding layer for each joint.
         """
@@ -46,13 +46,13 @@ class JointEmbedding(nn.Module):
         self.embedding_dim = embedding_dim
         self.embeddings = nn.ModuleList(
             [nn.Linear(joint_dim, embedding_dim) for _ in range(num_joints)]
-        )
+        ).to(device)
         self.positional_embeddings = nn.ModuleList(
             [
                 PositionalEncoding(embedding_dim, dropout=dropout, max_len=300)
                 for _ in range(num_joints)
             ]
-        )
+        ).to(device)
 
     def forward(self, src_seqs):
         """
@@ -339,11 +339,12 @@ class SpatioTemporalTransformer(nn.Module):
         joint_dim,
         seq_len,
         input_dim,
+        device,
         embedding_dim=128,
         ff_dim=256,
         embedding_dropout=0.1,
         num_heads=8,
-        attention_layers=8,
+        attention_layers=8
     ):
         """
         Initializes the ST Transformer.
@@ -357,13 +358,14 @@ class SpatioTemporalTransformer(nn.Module):
         self.embedding_dropout = embedding_dropout
         self.attention_layers = attention_layers
         self.num_heads = num_heads
+        self.device = device
 
         self.temporal_attention_weights_all_layers = []
         self.spatial_attention_weights_all_layers = []
 
         # Define Modules
         self.joint_embeddings = JointEmbedding(
-            num_joints, joint_dim, embedding_dim, embedding_dropout
+            num_joints, joint_dim, embedding_dim, embedding_dropout, device
         )
         self.spatio_temporal_attention = nn.ModuleList(
             [

@@ -13,9 +13,8 @@ def get_model(args, datasets, device):
 
     Args:
         args: The args for the run
-        model: The current model
         datasets: The datasets for the run
-
+        device: The device where the models and data will be housed
     Returns:
         A tuple of the model and the mask.
     """
