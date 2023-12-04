@@ -100,7 +100,7 @@ def train(args):
 
         if len(validation_losses) == 0 or epoch_val_loss <= min(validation_losses):
             torch.save(
-                model.state_dict(), f"{args.save_model_path}/best_epoch_{epoch}.model"
+                model.state_dict(), f"{args.save_model_path}/best_epoch.model"
             )
 
     plot_training_metrics(args, training_losses, validation_losses)
