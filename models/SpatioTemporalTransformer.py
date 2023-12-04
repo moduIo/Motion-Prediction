@@ -344,7 +344,7 @@ class SpatioTemporalTransformer(nn.Module):
         ff_dim=256,
         embedding_dropout=0.1,
         num_heads=8,
-        attention_layers=8
+        attention_layers=8,
     ):
         """
         Initializes the ST Transformer.
@@ -379,8 +379,8 @@ class SpatioTemporalTransformer(nn.Module):
                 )
                 for _ in range(attention_layers)
             ]
-        )
-        self.output = nn.Linear(num_joints * embedding_dim, num_joints * joint_dim)
+        ).to(device)
+        self.output = nn.Linear(num_joints * embedding_dim, num_joints * joint_dim).to(device)
 
     def forward(self, src_seqs):
         """

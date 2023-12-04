@@ -9,7 +9,9 @@ import random
 class DecoderStep(nn.Module):
     def __init__(self, input_dim, output_dim, num_layers, hidden_dim, device):
         super(DecoderStep, self).__init__()
-        self.lstm = (nn.LSTM(input_size=input_dim, hidden_size=hidden_dim,num_layers=num_layers)).to(device)
+        self.lstm = (
+            nn.LSTM(input_size=input_dim, hidden_size=hidden_dim, num_layers=num_layers)
+        ).to(device)
         self.out = nn.Linear(hidden_dim, output_dim)
 
     def forward(self, input, hidden=None, cell=None, encoder_outputs=None):
@@ -40,7 +42,7 @@ class LSTMDecoder(nn.Module):
         self.decoder_step = DecoderStep(
             input_dim=input_dim,
             output_dim=output_dim,
-            num_layers = num_layers,
+            num_layers=num_layers,
             hidden_dim=hidden_dim,
             device=device,
         )

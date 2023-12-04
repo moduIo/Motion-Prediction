@@ -60,7 +60,11 @@ def get_model(args, datasets, device):
             input_dim=raw_dim, hidden_dim=hidden_dim, num_layers=nlayers
         ).to(device)
         dec = LSTMDecoder(
-            input_dim=raw_dim, hidden_dim=hidden_dim, output_dim=raw_dim, num_layers=nlayers, device=device
+            input_dim=raw_dim,
+            hidden_dim=hidden_dim,
+            output_dim=raw_dim,
+            num_layers=nlayers,
+            device=device,
         ).to(device)
         model = Seq2Seq(enc, dec)
     elif args.model == ModelEnum.LSTM_SEQ2SEQ_ATT.value:
@@ -72,8 +76,8 @@ def get_model(args, datasets, device):
             hidden_dim=hidden_dim,
             output_dim=raw_dim,
             max_source_length=seq_len,
-            device=device
-            ).to(device)
+            device=device,
+        ).to(device)
         model = Seq2Seq(enc, dec)
     elif args.model == "S2S":
         pass
