@@ -96,6 +96,7 @@ def parse_predict_args(args):
     )
     model_info.add_argument("-dp", "--data_path", default="./data/sampled/aa/")
     model_info.add_argument("-spath", "--save_model_path", default="./model_saves/")
+    model_info.add_argument("--save_preds_path", default="./motion_saves/")
 
     parameters = parser.add_argument_group("Model Parameters")
     parameters.add_argument("-b", "--batch_size", default=32, type=int)

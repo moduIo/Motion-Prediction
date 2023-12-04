@@ -34,9 +34,8 @@ def predict(args):
                 src_seqs.to(device).float(),
                 tgt_seqs.to(device).float(),
             )
-            outputs = generate_motion(model, src_seqs, output_seq_len)
-
             # NOTE: It's assumed that the output will be auto-regressive
+            outputs = generate_motion(model, src_seqs, output_seq_len, args, save=True)
             loss = criterion(outputs, tgt_seqs)
             test_loss += loss.item()
 
