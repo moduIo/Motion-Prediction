@@ -37,12 +37,13 @@ def get_model(args, datasets, device):
             joint_dim,
             seq_len,
             raw_dim,
+            device,
             embedding_dim,
             ff_dim,
             dropout,
             nhead,
             nlayers,
-        )
+        ).to(device)
     elif args.model == ModelEnum.BIDIRECTIONAL_TRANSFORMER.value:
         model = BiDirectionalTransformer(
             num_joints,
