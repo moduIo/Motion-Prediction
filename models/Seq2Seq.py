@@ -2,6 +2,7 @@
 
 import torch.nn as nn
 
+
 class Seq2Seq(nn.Module):
     """Seq2Seq model for sequence generation. The interface takes predefined
     encoder and decoder as input.
@@ -15,7 +16,6 @@ class Seq2Seq(nn.Module):
         super(Seq2Seq, self).__init__()
         self.encoder = encoder
         self.decoder = decoder
-
 
     def forward(self, src, tgt, max_len=None):
         """

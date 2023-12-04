@@ -3,7 +3,7 @@ from models.BiDirectionalTransformer import BiDirectionalTransformer
 from utils.mask_generator import BatchJointMaskGenerator
 from utils.types import ModelEnum, TargetEnum
 from models.Encoders import LSTMEncoder
-from models.Decoders import LSTMDecoder,LSTMDecoderWithAttention
+from models.Decoders import LSTMDecoder, LSTMDecoderWithAttention
 from models.Seq2Seq import Seq2Seq
 
 
@@ -56,17 +56,29 @@ def get_model(args, datasets, device):
             dropout=dropout,
         ).to(device)
     elif args.model == ModelEnum.LSTM_SEQ2SEQ.value:
-        enc = LSTMEncoder(input_dim=raw_dim, hidden_dim=hidden_dim, num_layers=nlayers).to(device)
-        dec = LSTMDecoder(input_dim=raw_dim, hidden_dim=hidden_dim, output_dim=raw_dim,device=device).to(device)
+        enc = LSTMEncoder(
+            input_dim=raw_dim, hidden_dim=hidden_dim, num_layers=nlayers
+        ).to(device)
+        dec = LSTMDecoder(
+            input_dim=raw_dim, hidden_dim=hidden_dim, output_dim=raw_dim, device=device
+        ).to(device)
         model = Seq2Seq(enc, dec)
     elif args.model == ModelEnum.LSTM_SEQ2SEQ_ATT.value:
-        enc = LSTMEncoder(input_dim=raw_dim, hidden_dim=hidden_dim, num_layers=nlayers).to(device)
-        dec = LSTMDecoderWithAttention(input_dim=raw_dim, hidden_dim=hidden_dim, output_dim=raw_dim, max_source_length = seq_len, device=device).to(device)
+        enc = LSTMEncoder(
+            input_dim=raw_dim, hidden_dim=hidden_dim, num_layers=nlayers
+        ).to(device)
+        dec = LSTMDecoderWithAttention(
+            input_dim=raw_dim,
+            hidden_dim=hidden_dim,
+            output_dim=raw_dim,
+            max_source_length=seq_len,
+            device=device,
+        ).to(device)
         model = Seq2Seq(enc, dec)
     elif args.model == "S2S":
         pass
     else:
-        raise("Incorrect program usage.")
+        raise ("Incorrect program usage.")
 
     if args.target_type == TargetEnum.PRE_TRAIN.value:
         mask = BatchJointMaskGenerator(

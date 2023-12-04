@@ -37,7 +37,7 @@ class BiDirectionalTransformer(nn.Module):
             nhead=self.nhead,
             dim_feedforward=self.dim_feedforward,
             dropout=self.dropout,
-            batch_first=self.batch_first
+            batch_first=self.batch_first,
         )
         self.transformer_encoder = nn.TransformerEncoder(
             self.encoder_layer, num_layers=num_encoder_layers

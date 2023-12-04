@@ -4,8 +4,7 @@ import torch.nn as nn
 
 
 class LSTMEncoder(nn.Module):
-    def __init__(
-        self, input_dim=None, hidden_dim=1024, num_layers=1):
+    def __init__(self, input_dim=None, hidden_dim=1024, num_layers=1):
         """LSTMEncoder encodes input vector using LSTM cells.
 
         Attributes:
@@ -15,7 +14,12 @@ class LSTMEncoder(nn.Module):
 
         """
         super(LSTMEncoder, self).__init__()
-        self.lstm = nn.LSTM(input_size=input_dim, hidden_size=hidden_dim,num_layers=num_layers,batch_first=True)
+        self.lstm = nn.LSTM(
+            input_size=input_dim,
+            hidden_size=hidden_dim,
+            num_layers=num_layers,
+            batch_first=True,
+        )
 
     def forward(self, input):
         """

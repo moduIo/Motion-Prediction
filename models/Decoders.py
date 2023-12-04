@@ -9,8 +9,7 @@ import random
 class DecoderStep(nn.Module):
     def __init__(self, input_dim, output_dim, hidden_dim, device):
         super(DecoderStep, self).__init__()
-        self.lstm = (
-            nn.LSTM(input_size=input_dim, hidden_size=hidden_dim)).to(device)
+        self.lstm = (nn.LSTM(input_size=input_dim, hidden_size=hidden_dim)).to(device)
         self.out = nn.Linear(hidden_dim, output_dim)
 
     def forward(self, input, hidden=None, cell=None, encoder_outputs=None):
@@ -37,7 +36,12 @@ class LSTMDecoder(nn.Module):
     def __init__(self, input_dim, output_dim, hidden_dim, device):
         super(LSTMDecoder, self).__init__()
         self.input_dim = input_dim
-        self.decoder_step = DecoderStep(input_dim=input_dim, output_dim=output_dim, hidden_dim=hidden_dim,device=device)
+        self.decoder_step = DecoderStep(
+            input_dim=input_dim,
+            output_dim=output_dim,
+            hidden_dim=hidden_dim,
+            device=device,
+        )
         self.device = device
 
     def forward(
@@ -47,7 +51,8 @@ class LSTMDecoder(nn.Module):
         cell=None,
         max_len=None,
         encoder_outputs=None,
-        teacher_forcing_ratio=0.5):
+        teacher_forcing_ratio=0.5,
+    ):
         """
         Inputs:
             tgt: Target sequence provided as input to the decoder. During
@@ -69,7 +74,9 @@ class LSTMDecoder(nn.Module):
         outputs = torch.zeros(max_len, batch_size, self.input_dim).to(self.device)
         for t in range(max_len):
             input = input.unsqueeze(0)
-            output, hidden, cell = self.decoder_step(input, hidden, cell, encoder_outputs)
+            output, hidden, cell = self.decoder_step(
+                input, hidden, cell, encoder_outputs
+            )
             outputs[t] = output
             teacher_force = random.random() < teacher_forcing_ratio
             input = tgt[t] if teacher_force else output
@@ -78,8 +85,7 @@ class LSTMDecoder(nn.Module):
 
 
 class DecoderStepWithAttention(nn.Module):
-    def __init__(
-        self, input_dim, output_dim, hidden_dim, source_length, device):
+    def __init__(self, input_dim, output_dim, hidden_dim, source_length, device):
         super(DecoderStepWithAttention, self).__init__()
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
@@ -88,17 +94,20 @@ class DecoderStepWithAttention(nn.Module):
         self.device = device
 
         self.attn = nn.Linear(
-            self.hidden_dim + self.input_dim, self.source_length,
+            self.hidden_dim + self.input_dim,
+            self.source_length,
         )
         self.attn_combine = nn.Linear(
-            self.hidden_dim + self.input_dim, self.input_dim,
+            self.hidden_dim + self.input_dim,
+            self.input_dim,
         )
         self.lstm = nn.LSTM(input_size=input_dim, hidden_size=hidden_dim)
         self.out = nn.Linear(self.hidden_dim, self.output_dim)
 
     def forward(self, input, hidden, cell, encoder_outputs):
         attn_weights = F.softmax(
-            self.attn(torch.cat((input, hidden), 2)), dim=2,
+            self.attn(torch.cat((input, hidden), 2)),
+            dim=2,
         )
         attn_applied = torch.bmm(attn_weights.transpose(0, 1), encoder_outputs)
 
@@ -116,13 +125,7 @@ class DecoderStepWithAttention(nn.Module):
 
 
 class LSTMDecoderWithAttention(LSTMDecoder):
-    def __init__(
-        self,
-        input_dim,
-        output_dim,
-        hidden_dim,
-        max_source_length,
-        device):
+    def __init__(self, input_dim, output_dim, hidden_dim, max_source_length, device):
         """Extension of LSTMDecoder that uses attention mechanism to generate
         sequences.
 
@@ -137,6 +140,6 @@ class LSTMDecoderWithAttention(LSTMDecoder):
             input_dim, output_dim, hidden_dim, device
         )
         self.decoder_step = DecoderStepWithAttention(
-            input_dim, output_dim, hidden_dim, max_source_length,device
+            input_dim, output_dim, hidden_dim, max_source_length, device
         )
         self.device = device

@@ -5,7 +5,7 @@ from tasks.predict import predict
 
 def main():
     mode_arg, args = parse_mode_arg()
-    if mode_arg.mode == 'train':
+    if mode_arg.mode == "train":
         train(parse_train_args(args)[0])
     else:
         predict(parse_predict_args(args)[0])

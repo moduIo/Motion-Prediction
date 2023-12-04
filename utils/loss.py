@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 
 from utils.dataset import generate_auto_regressive_targets
-from utils.types import TargetEnum,ModelEnum
+from utils.types import TargetEnum, ModelEnum
+
 
 class PerJointMSELoss(nn.Module):
     def __init__(self, number_joints, joint_dimension):
@@ -13,8 +14,12 @@ class PerJointMSELoss(nn.Module):
 
     def forward(self, pred, target):
         # Reshape [batch size, seq length, feature dimension] to [batch size, seq length, number joints, joint dimension]
-        pred = pred.reshape(pred.size(0), pred.size(1), self.number_joints, self.joint_dimension)
-        target = target.reshape(target.size(0), target.size(1), self.number_joints, self.joint_dimension)
+        pred = pred.reshape(
+            pred.size(0), pred.size(1), self.number_joints, self.joint_dimension
+        )
+        target = target.reshape(
+            target.size(0), target.size(1), self.number_joints, self.joint_dimension
+        )
 
         # Initialize total loss
         total_loss = 0.0
@@ -56,8 +61,10 @@ def compute_validation_loss(args, model, datasets, criterion, device, mask):
                 tgt_seqs.to(device).float(),
             )
 
-            if (args.model == ModelEnum.LSTM_SEQ2SEQ.value) or (args.model == ModelEnum.LSTM_SEQ2SEQ_ATT.value):
-                outputs = model(src_seqs,tgt_seqs)
+            if (args.model == ModelEnum.LSTM_SEQ2SEQ.value) or (
+                args.model == ModelEnum.LSTM_SEQ2SEQ_ATT.value
+            ):
+                outputs = model(src_seqs, tgt_seqs)
             else:
                 if args.target_type == TargetEnum.PRE_TRAIN.value:
                     src_mask = mask.mask_joints(src_seqs)
