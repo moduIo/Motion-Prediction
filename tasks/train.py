@@ -31,6 +31,7 @@ def train(args):
     print(f"=== Training model with args={args} on {device} ===")
     torch.autograd.set_detect_anomaly(True)
     opt = torch.optim.Adam(model.parameters())
+    use_scheduler = args.model == ModelEnum.SPATIO_TEMPORAL_TRANSFORMER.value
     scheduler = lr_scheduler.LambdaLR(opt, setup_attention_learning_rate_schedule(args.embedding_dim))
     criterion = PerJointMSELoss(number_joints=num_joints, joint_dimension=joint_dim)
 
@@ -75,8 +76,11 @@ def train(args):
                 loss = criterion(outputs, tgt_seqs)
 
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1)
             opt.step()
-            scheduler.step()
+
+            if use_scheduler:
+                scheduler.step()
             epoch_loss += loss.item()
 
             # Update the progress bar with the current loss
