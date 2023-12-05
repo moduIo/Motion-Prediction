@@ -87,6 +87,7 @@ class SpatioTemporalAttention(nn.Module):
         self,
         num_joints,
         seq_len,
+        device,
         embedding_dim=128,
         ff_dim=256,
         num_heads=8,
@@ -105,6 +106,7 @@ class SpatioTemporalAttention(nn.Module):
         assert self.attention_dim.is_integer()
         self.attention_dim = int(self.attention_dim)
         self.feedforward_dim = ff_dim
+        self.device = device
 
         # Attention Weights
         self.temporal_attention_weights = []
@@ -121,7 +123,7 @@ class SpatioTemporalAttention(nn.Module):
                 )
                 for _ in range(num_heads)
             ]
-        )
+        ).to(self.device)
         self.temporal_attention_k = nn.ModuleList(
             [
                 nn.ModuleList(
@@ -132,7 +134,7 @@ class SpatioTemporalAttention(nn.Module):
                 )
                 for _ in range(num_heads)
             ]
-        )
+        ).to(self.device)
         self.temporal_attention_v = nn.ModuleList(
             [
                 nn.ModuleList(
@@ -143,10 +145,10 @@ class SpatioTemporalAttention(nn.Module):
                 )
                 for _ in range(num_heads)
             ]
-        )
-        self.temporal_head_projection = nn.Linear(self.input_dim, self.input_dim)
-        self.temporal_tau = nn.Softmax(dim=-1)
-        self.temporal_norm = nn.BatchNorm1d(self.input_dim)
+        ).to(self.device)
+        self.temporal_head_projection = nn.Linear(self.input_dim, self.input_dim).to(self.device)
+        self.temporal_tau = nn.Softmax(dim=-1).to(self.device)
+        self.temporal_norm = nn.BatchNorm1d(self.input_dim).to(self.device)
 
         # Spatial Attention
         self.spatial_attention_q = nn.ModuleList(
@@ -159,34 +161,34 @@ class SpatioTemporalAttention(nn.Module):
                 )
                 for _ in range(num_heads)
             ]
-        )
+        ).to(self.device)
         self.spatial_attention_k = nn.ModuleList(
             [
                 nn.Linear(self.embedding_dim, self.attention_dim, bias=False)
                 for _ in range(num_heads)
             ]
-        )
+        ).to(self.device)
         self.spatial_attention_v = nn.ModuleList(
             [
                 nn.Linear(self.embedding_dim, self.attention_dim, bias=False)
                 for _ in range(num_heads)
             ]
-        )
-        self.spatial_head_projection = nn.Linear(self.input_dim, self.input_dim)
-        self.spatial_tau = nn.Softmax(dim=-1)
-        self.spatial_norm = nn.BatchNorm1d(self.input_dim)
+        ).to(self.device)
+        self.spatial_head_projection = nn.Linear(self.input_dim, self.input_dim).to(self.device)
+        self.spatial_tau = nn.Softmax(dim=-1).to(self.device)
+        self.spatial_norm = nn.BatchNorm1d(self.input_dim).to(self.device)
 
         # Setup layers
         self.attention_dim_norm = torch.sqrt(torch.tensor(self.attention_dim).float())
-        self.dropout = nn.Dropout(p=dropout)
+        self.dropout = nn.Dropout(p=dropout).to(self.device)
 
         # Feed Forward Layers
         self.fc = nn.Sequential(
             nn.Linear(self.input_dim, ff_dim),
             nn.ReLU(),
             nn.Linear(ff_dim, self.input_dim),
-        )
-        self.fc_norm = torch.nn.BatchNorm1d(self.input_dim)
+        ).to(self.device)
+        self.fc_norm = torch.nn.BatchNorm1d(self.input_dim).to(self.device)
 
     def _generate_square_subsequent_mask(self, shape):
         """
@@ -372,6 +374,7 @@ class SpatioTemporalTransformer(nn.Module):
                 SpatioTemporalAttention(
                     num_joints,
                     seq_len,
+                    device,
                     embedding_dim,
                     ff_dim,
                     num_heads,
@@ -379,8 +382,8 @@ class SpatioTemporalTransformer(nn.Module):
                 )
                 for _ in range(attention_layers)
             ]
-        ).to(device)
-        self.output = nn.Linear(num_joints * embedding_dim, num_joints * joint_dim).to(device)
+        ).to(self.device)
+        self.output = nn.Linear(num_joints * embedding_dim, num_joints * joint_dim).to(self.device)
 
     def forward(self, src_seqs):
         """
