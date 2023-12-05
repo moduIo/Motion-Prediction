@@ -98,7 +98,7 @@ def train(args):
 
             torch.save(model.state_dict(), f"{args.save_model_path}/{epoch}.model")
 
-        if len(validation_losses) == 0 or epoch_val_loss <= min(validation_losses):
+        if len(validation_losses) == 0 or epoch_val_loss / val_batch_size <= min(validation_losses):
             torch.save(
                 model.state_dict(), f"{args.save_model_path}/best_epoch.model"
             )
