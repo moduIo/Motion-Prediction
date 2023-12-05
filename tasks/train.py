@@ -75,6 +75,7 @@ def train(args):
                 loss = criterion(outputs, tgt_seqs)
 
             loss.backward()
+            opt.step()
             scheduler.step()
             epoch_loss += loss.item()
 

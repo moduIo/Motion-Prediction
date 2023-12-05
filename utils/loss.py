@@ -1,4 +1,3 @@
-import math
 import torch
 import torch.nn as nn
 
@@ -45,9 +44,10 @@ def setup_attention_learning_rate_schedule(dimension):
         """
         Implements the custom learning rate schedule defined in the STT paper
         """
+        step = epoch + 1
         warmup = 10000**-1.5
         D = dimension
-        return D**-.5 * math.min(epoch**-.5, epoch * warmup)
+        return D**-.5 * min(step**-.5, step * warmup)
 
     return attention_learning_rate_schedule
 
