@@ -36,6 +36,22 @@ class PerJointMSELoss(nn.Module):
         return average_loss
 
 
+def setup_attention_learning_rate_schedule(dimension):
+    """
+    Lambda function hack see: https://stackoverflow.com/questions/77398956/how-to-pass-a-parameter-of-a-lambda-functon-to-another-function-which-accepts-th
+    """
+    def attention_learning_rate_schedule(epoch, dimension=dimension):
+        """
+        Implements the custom learning rate schedule defined in the STT paper
+        """
+        step = epoch + 1
+        warmup = 10000**-1.5
+        D = dimension
+        return D**-.5 * min(step**-.5, step * warmup)
+
+    return attention_learning_rate_schedule
+
+
 def compute_validation_loss(args, model, datasets, criterion, device, mask):
     """
     Function computes the validation loss for the epoch.

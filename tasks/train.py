@@ -1,8 +1,10 @@
-import torch
 import os
 
+import torch
+import torch.optim.lr_scheduler as lr_scheduler
+
 from utils.dataset import prepare_dataset, generate_auto_regressive_targets
-from utils.loss import compute_validation_loss, PerJointMSELoss
+from utils.loss import compute_validation_loss, PerJointMSELoss, setup_attention_learning_rate_schedule
 from utils.metrics import plot_training_metrics
 from utils.model import get_model
 from utils.types import TargetEnum, ModelEnum
@@ -28,7 +30,9 @@ def train(args):
     # Train
     print(f"=== Training model with args={args} on {device} ===")
     torch.autograd.set_detect_anomaly(True)
-    opt = torch.optim.SGD(model.parameters(), lr=1e-8, momentum=0.9)
+    opt = torch.optim.Adam(model.parameters())
+    use_scheduler = args.model == ModelEnum.SPATIO_TEMPORAL_TRANSFORMER.value
+    scheduler = lr_scheduler.LambdaLR(opt, setup_attention_learning_rate_schedule(args.embedding_dim))
     criterion = PerJointMSELoss(number_joints=num_joints, joint_dimension=joint_dim)
 
     training_losses = []
@@ -72,7 +76,11 @@ def train(args):
                 loss = criterion(outputs, tgt_seqs)
 
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1)
             opt.step()
+
+            if use_scheduler:
+                scheduler.step()
             epoch_loss += loss.item()
 
             # Update the progress bar with the current loss
