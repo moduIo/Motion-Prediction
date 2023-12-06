@@ -43,6 +43,7 @@ def get_model(args, datasets, device):
             dropout,
             nhead,
             nlayers,
+            args.temporal_attn_horizon,
         ).to(device)
     elif args.model == ModelEnum.BIDIRECTIONAL_TRANSFORMER.value:
         model = BiDirectionalTransformer(

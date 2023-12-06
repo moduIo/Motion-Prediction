@@ -92,6 +92,7 @@ class SpatioTemporalAttention(nn.Module):
         ff_dim=256,
         num_heads=8,
         dropout=0.1,
+        temporal_attention_horizon=120,
     ):
         """
         Initializes the ST Attention.
@@ -107,6 +108,7 @@ class SpatioTemporalAttention(nn.Module):
         self.attention_dim = int(self.attention_dim)
         self.feedforward_dim = ff_dim
         self.device = device
+        self.temporal_attention_horizon = temporal_attention_horizon
 
         # Attention Weights
         self.temporal_attention_weights = []
@@ -265,6 +267,10 @@ class SpatioTemporalAttention(nn.Module):
             spatial_attentions_over_time = []
 
             for i in range(self.seq_len):
+                if i < self.seq_len - self.temporal_attention_horizon:
+                    # Skip timesteps which are earlier than the attention horizon
+                    continue
+
                 # Slice sequence to the embedding at each timestep
                 #   and reshape to (batch_size, num_joints, embedding_dimension)
                 e_i = torch.reshape(
@@ -293,7 +299,8 @@ class SpatioTemporalAttention(nn.Module):
         # Combine attention head results
         spatial_attention = torch.cat(spatial_attentions, dim=-1)
         spatial_attention = self.spatial_head_projection(spatial_attention)
-        return spatial_attention
+        base_seqs = src_seqs[:, :-self.temporal_attention_horizon, :]  # Non-processed part
+        return torch.cat([base_seqs, spatial_attention], dim=1)
 
     def get_temporal_attention_weights(self):
         return self.temporal_attention_weights
@@ -347,6 +354,7 @@ class SpatioTemporalTransformer(nn.Module):
         embedding_dropout=0.1,
         num_heads=8,
         attention_layers=8,
+        temporal_attention_horizon=120,
     ):
         """
         Initializes the ST Transformer.
@@ -379,6 +387,7 @@ class SpatioTemporalTransformer(nn.Module):
                     ff_dim,
                     num_heads,
                     embedding_dropout,
+                    temporal_attention_horizon,
                 )
                 for _ in range(attention_layers)
             ]
