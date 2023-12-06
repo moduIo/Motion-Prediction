@@ -264,7 +264,7 @@ class SpatioTemporalAttention(nn.Module):
         for h in range(self.num_heads):
             spatial_attentions_over_time = []
 
-            for i in range(self.seq_len):
+            for i in range(self.seq_len - 10, self.seq_len):
                 # Slice sequence to the embedding at each timestep
                 #   and reshape to (batch_size, num_joints, embedding_dimension)
                 e_i = torch.reshape(
