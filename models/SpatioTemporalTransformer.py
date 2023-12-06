@@ -218,7 +218,7 @@ class SpatioTemporalAttention(nn.Module):
         Returns:
             A Tensor with temporal attention values.
         """
-        mask = self._generate_square_subsequent_mask(src_seqs.shape[1])
+        mask = self._generate_square_subsequent_mask(src_seqs.shape[1]).to(self.device)
 
         temporal_attentions = []
         for h in range(self.num_heads):
