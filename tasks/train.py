@@ -103,7 +103,8 @@ def train(args):
                 for k, v in arguments.items():
                     line = str(k) + ": " + str(v) + "\n"
                     f.write(line)
-
+                f.write("Training Loss: " + min(training_losses) + "\n")
+                f.write("Validation Loss: "+ min(validation_losses) + "\n")
             torch.save(model.state_dict(), f"{args.save_model_path}/{epoch}.model")
 
         if len(validation_losses) == 0 or epoch_val_loss / val_batch_size <= min(validation_losses):
