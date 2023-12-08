@@ -99,17 +99,23 @@ def train(args):
         # Save model
         if epoch % args.save_model_frequency == 0:
             arguments = vars(args)
-            with open(f"{args.save_model_path}/model_config.txt", "w+") as f:
-                for k, v in arguments.items():
-                    line = str(k) + ": " + str(v) + "\n"
-                    f.write(line)
-                f.write("Training Loss: " + min(training_losses) + "\n")
-                f.write("Validation Loss: "+ min(validation_losses) + "\n")
+
             torch.save(model.state_dict(), f"{args.save_model_path}/{epoch}.model")
 
         if len(validation_losses) == 0 or epoch_val_loss / val_batch_size <= min(validation_losses):
             torch.save(
                 model.state_dict(), f"{args.save_model_path}/best_epoch.model"
             )
+        if epoch == (args.epochs-1):
+            with open(f"{args.save_model_path}/model_config.txt", "w+") as f:
+                for k, v in arguments.items():
+                    line = str(k) + ": " + str(v) + "\n"
+                    f.write(line)
+                f.write("Min Training Loss: " + str(min(training_losses)) + "\n")
+                f.write("Min Validation Loss: "+ str(min(validation_losses)) + "\n")
+                s_tr_losses = ', '.join(str(x) for x in training_losses)
+                s_val_losses = ', '.join(str(x) for x in validation_losses)
+                f.write("Training Losses: " + s_tr_losses + "\n")
+                f.write("Validation Losses: " + s_val_losses + "\n")
 
     plot_training_metrics(args, training_losses, validation_losses)
