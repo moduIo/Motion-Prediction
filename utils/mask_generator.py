@@ -6,7 +6,7 @@ class BatchJointMaskGenerator:
         self,
         num_joints,
         joint_dim,
-        mask_value=-2,
+        mask_value=-4,
         time_step_mask_prob=1.0,
         joint_mask_prob=1 / 24,
     ):
