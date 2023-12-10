@@ -1,6 +1,6 @@
 import torch.nn as nn
 from models.SpatioTemporalTransformer import JointEmbedding
-
+import torch.nn.init as init
 
 class BiDirectionalTransformer(nn.Module):
     ### See how facebook implemented theirs in fair motion, add blocks for num heads, etc.
@@ -46,6 +46,15 @@ class BiDirectionalTransformer(nn.Module):
         self.output_layer = nn.Linear(
             self.embedding_dim * self.num_joints, self.num_joints * self.joint_dim
         )
+
+                # Apply weight initialization
+        self.apply(self.init_weights)
+
+    def init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            init.xavier_uniform_(m.weight)
+            if m.bias is not None:
+                init.zeros_(m.bias)
 
     def forward(self, src):
         """

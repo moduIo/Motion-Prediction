@@ -90,7 +90,7 @@ def get_model(args, datasets, device):
         mask = BatchJointMaskGenerator(
             num_joints,
             joint_dim,
-            mask_value=-2,
+            mask_value=-4,
             time_step_mask_prob=seq_mask_prob,
             joint_mask_prob=joint_mask_prob,
         )

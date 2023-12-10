@@ -6,9 +6,9 @@ class BatchJointMaskGenerator:
         self,
         num_joints,
         joint_dim,
-        mask_value=-4,
+        mask_value=0,
         time_step_mask_prob=1.0,
-        joint_mask_prob=1 / 24,
+        joint_mask_prob=1/24,
     ):
         """
         Args:
@@ -23,6 +23,8 @@ class BatchJointMaskGenerator:
         self.mask_value = mask_value
         self.time_step_mask_prob = time_step_mask_prob
         self.joint_mask_prob = joint_mask_prob
+
+        print(self.mask_value)
 
     def mask_joints(self, batch_sequence):
         """
