@@ -42,23 +42,26 @@ def train(args):
 
     training_losses = []
     validation_losses = []
+    step = 1
     os.makedirs(args.save_model_path, exist_ok=True)
     for epoch in range(args.epochs):
         print(f"Start Epoch {epoch}:")
         model.train()
         epoch_loss = 0
 
-        # Adjust lr
-        if ModelEnum.SPATIO_TEMPORAL_TRANSFORMER.value == args.model:
-            attention_learning_rate_schedule(opt, epoch, embedding_size)
-        else:
+        # Adjust lr if not STT with student schedule
+        if ModelEnum.SPATIO_TEMPORAL_TRANSFORMER.value != args.model:
             adjust_learning_rate(opt, epoch, lr_factor, lr_rate)
 
         # Wrapping the training dataset with tqdm for the progress bar
         train_loader = tqdm(datasets["train"], desc=f"Epoch {epoch}", leave=False)
 
-        for _, (src_seqs, tgt_seqs) in enumerate(train_loader):
+        for _ , (src_seqs, tgt_seqs) in enumerate(train_loader):
+            
             opt.zero_grad()
+            if ModelEnum.SPATIO_TEMPORAL_TRANSFORMER.value == args.model:
+                attention_learning_rate_schedule(opt, step, embedding_size)
+                step += 1
 
             src_seqs, tgt_seqs = (
                 src_seqs.to(device).float(),

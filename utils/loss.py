@@ -36,7 +36,7 @@ class PerJointMSELoss(nn.Module):
         return average_loss
 
 
-def attention_learning_rate_schedule(optimizer, epoch, dimension):
+def attention_learning_rate_schedule(optimizer, step, dimension):
     """
     Implements the custom learning rate schedule defined in the 'Attention is All You Need' paper.
 
@@ -44,7 +44,6 @@ def attention_learning_rate_schedule(optimizer, epoch, dimension):
     :param epoch: int, current epoch number
     :param dimension: int, model dimension
     """
-    step = epoch + 1
     warmup = 10000 ** -1.5
     lr = dimension ** -0.5 * min(step ** -0.5, step * warmup)
     for param_group in optimizer.param_groups:
