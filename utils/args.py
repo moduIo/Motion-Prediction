@@ -87,11 +87,8 @@ def parse_predict_args(args):
         "--model",
         choices=[
             "spatio-temporal-transformer",
-            "rnn",
-            "rnn_a",
-            "lstm",
-            "lstm_a",
-            "seq2seq",
+            "lstm_seq2seq",
+            "lstm_seq2seq_att",
             "bi-directional-transformer",
         ],
         default="spatio-temporal-transformer",
