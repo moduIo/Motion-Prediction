@@ -4,7 +4,8 @@ PyTorch implementation of Spatio-temporal Transformers (https://github.com/eth-a
 # Project Structure
 1. `models/` contains implementations of various models,
 2. `utils/` contains helper functions,
-3. `main.py` is the entrypoint for the program.
+3. `tasks/` contains training and scoring entrypoints,
+4. `main.py` is the entrypoint for the program.
 
 # Installation
 
