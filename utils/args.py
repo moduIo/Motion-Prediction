@@ -110,5 +110,10 @@ def parse_predict_args(args):
     parameters.add_argument("-do", "--dropout", default=0.1, type=float)
     parameters.add_argument("-mp1", "--seqmaskprob", default=1.0, type=float)
     parameters.add_argument("-mp2", "--jointmaskprob", default=0.05, type=float)
+    parameters.add_argument("-hid", "--hidden_dim", default=64, type=int)
+    parameters.add_argument("-tah", "--temporal_attn_horizon", default=10, type=int)
+    parameters.add_argument("-lrs", "--lr_start", default=.0001, type=float)
+    parameters.add_argument("-lrf", "--lr_factor", default=.1, type=float)
+    parameters.add_argument("-lrr", "--lr_rate", default=10, type=int)
 
     return parser.parse_known_args(args)
