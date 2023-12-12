@@ -1,6 +1,13 @@
 # Motion-Prediction
 PyTorch implementation of Spatio-temporal Transformers (https://github.com/eth-ait/motion-transformer) for 3D Motion Prediction on AMASS.
 
+This project was a collaboration between:
+* Tim Zhang, thzhang@cs.stonybrook.edu
+* Johnny Evans, jevans324@gatech.edu
+* Hersh Gupta, hgupta@gatech.edu
+
+Our report can be viewed here: https://www.overleaf.com/read/xzbdzgzjwczs#1e3bae
+
 # Project Structure
 1. `models/` contains implementations of various models,
 2. `utils/` contains helper functions,
